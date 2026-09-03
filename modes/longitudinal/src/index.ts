@@ -4,6 +4,7 @@ import {
   initToolGroups,
   ohif,
   cornerstone,
+  mswnh,
   dicomsr,
   dicomvideo,
   basicLayout,
@@ -34,7 +35,7 @@ export const longitudinalInstance = {
     // `leftPanels` / `rightPanels` customizations so `mode` phase
     // blocks and global customizations can modify them.
     leftPanels: [tracked.thumbnailList],
-    rightPanels: [cornerstone.segmentation, tracked.measurements],
+    rightPanels: [mswnh.studyNotes, cornerstone.segmentation, tracked.measurements],
     viewports: [
       {
         namespace: tracked.viewport,

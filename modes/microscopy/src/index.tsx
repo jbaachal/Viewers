@@ -11,6 +11,10 @@ const ohif = {
   rightPanel: '@ohif/extension-dicom-microscopy.panelModule.measure',
 };
 
+const mswnh = {
+  studyNotes: '@mswnh/extension-pacs.panelModule.studyNotes',
+};
+
 export const cornerstone = {
   viewport: '@ohif/extension-cornerstone.viewportModule.cornerstone',
 };
@@ -32,6 +36,7 @@ const extensionDependencies = {
   '@ohif/extension-dicom-pdf': '^3.0.1',
   '@ohif/extension-dicom-video': '^3.0.1',
   '@ohif/extension-dicom-microscopy': '^3.0.0',
+  '@mswnh/extension-pacs': '^3.13.2',
 };
 
 function modeFactory({ modeConfiguration }) {
@@ -93,7 +98,7 @@ function modeFactory({ modeConfiguration }) {
               leftPanelResizable: true,
               leftPanelClosed: true, // we have problem with rendering thumbnails for microscopy images
               // rightPanelClosed: true, // we do not have the save microscopy measurements yet
-              rightPanels: [ohif.rightPanel],
+              rightPanels: [mswnh.studyNotes, ohif.rightPanel],
               rightPanelResizable: true,
               viewports: [
                 {

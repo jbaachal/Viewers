@@ -770,6 +770,21 @@ importers:
         specifier: 5.10.0
         version: 5.10.0
 
+  extensions/mswnh-pacs:
+    dependencies:
+      '@ohif/core':
+        specifier: workspace:*
+        version: link:../../platform/core
+      '@ohif/ui':
+        specifier: workspace:*
+        version: link:../../platform/ui
+      react:
+        specifier: 18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: 18.3.1
+        version: 18.3.1(react@18.3.1)
+
   extensions/test-extension:
     dependencies:
       '@babel/runtime':
@@ -7313,6 +7328,7 @@ packages:
 
   crypto-js@4.2.0:
     resolution: {integrity: sha512-KALDyEYgpY+Rlob/iriUtjV6d5Eq+Y191A5g4UqLAi8CyGP9N1+FdVbkc1SxKc2r4YAYqG8JzO2KGL+AizD70Q==}
+    deprecated: Active development of CryptoJS has been discontinued. This library is no longer maintained.
 
   crypto-random-string@2.0.0:
     resolution: {integrity: sha512-v1plID3y9r/lPhviJ1wrXpLeyUIGAZ2SHNYTEapm7/8A9nLPoyvVp3RK/EPFqn5kEznyWgYZNsRtYYIWbuG8KA==}

@@ -1,0 +1,18 @@
+{
+  "name": "@mswnh/extension-pacs",
+  "version": "3.13.2",
+  "description": "MSWNH PACS workflow extensions for OHIF",
+  "author": "MSWNH",
+  "license": "MIT",
+  "private": true,
+  "module": "src/index.ts",
+  "engines": {
+    "node": ">=24"
+  },
+  "peerDependencies": {
+    "@ohif/core": "workspace:*",
+    "@ohif/ui": "workspace:*",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  }
+}

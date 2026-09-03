@@ -39,6 +39,9 @@ export const cornerstone = {
   viewport: '@ohif/extension-cornerstone.viewportModule.cornerstone',
 };
 
+export const mswnh = {
+  studyNotes: '@mswnh/extension-pacs.panelModule.studyNotes',
+};
 export const dicomsr = {
   sopClassHandler: '@ohif/extension-cornerstone-dicom-sr.sopClassHandlerModule.dicom-sr',
   sopClassHandler3D: '@ohif/extension-cornerstone-dicom-sr.sopClassHandlerModule.dicom-sr-3d',
@@ -87,6 +90,7 @@ export const extensionDependencies = {
   '@ohif/extension-cornerstone-dicom-pmap': '^3.0.0',
   '@ohif/extension-cornerstone-dicom-rt': '^3.0.0',
   '@ohif/extension-dicom-pdf': '^3.0.1',
+  '@mswnh/extension-pacs': '^3.13.2',
   '@ohif/extension-dicom-video': '^3.0.1',
 };
 
@@ -263,7 +267,7 @@ export const basicLayout = {
     // before the sidebars resolve.
     leftPanels: [ohif.thumbnailList],
     leftPanelResizable: true,
-    rightPanels: [cornerstone.segmentation, cornerstone.measurements],
+    rightPanels: [mswnh.studyNotes, cornerstone.segmentation, cornerstone.measurements],
     rightPanelClosed: true,
     rightPanelResizable: true,
     viewports: [

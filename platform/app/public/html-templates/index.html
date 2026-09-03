@@ -58,23 +58,16 @@
       rel="manifest"
       href="<%= PUBLIC_URL %>manifest.json"
     />
+    <link
+      rel="icon"
+      type="image/png"
+      href="<%= PUBLIC_URL %>hospital-favicon.png"
+    />
+    <link
+      rel="stylesheet"
+      href="<%= PUBLIC_URL %>custom.css"
+    />
 
-    <link
-      rel="shortcut icon"
-      href="<%= PUBLIC_URL %>assets/favicon.ico"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="16x16"
-      href="<%= PUBLIC_URL %>assets/favicon-16x16.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href="<%= PUBLIC_URL %>assets/favicon-32x32.png"
-    />
     <link
       rel="apple-touch-icon"
       sizes="57x57"
@@ -204,7 +197,7 @@
       src="<%= PUBLIC_URL %>init-service-worker.js"
     ></script>
 
-    <title>OHIF Viewer</title>
+    <title>MSWNH PACS</title>
 
     <script>
       function browserImportFunction(moduleId) {
