@@ -7,6 +7,7 @@ import {
   getStudyNotes,
   SaveStudyNoteRequest,
   StudyNote,
+  StudyNotesApiError,
   updateStudyNote,
 } from '../services/StudyNotesService';
 
@@ -195,7 +196,13 @@ export default function StudyNotesPanel() {
       });
       await loadNotes(studyInstanceUid);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to delete the note.');
+      setError(
+        err instanceof StudyNotesApiError && err.status === 403
+          ? 'You do not have permission to delete this note. Only authorized radiologists and PACS administrators can delete study notes.'
+          : err instanceof Error
+            ? err.message
+            : 'Unable to delete the note.'
+      );
     } finally {
       setSaving(false);
     }

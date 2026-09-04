@@ -35,7 +35,12 @@ export const longitudinalInstance = {
     // `leftPanels` / `rightPanels` customizations so `mode` phase
     // blocks and global customizations can modify them.
     leftPanels: [tracked.thumbnailList],
-    rightPanels: [mswnh.studyNotes, cornerstone.segmentation, tracked.measurements],
+    rightPanels: [
+      mswnh.studyReport,
+      mswnh.studyNotes,
+      cornerstone.segmentation,
+      tracked.measurements,
+    ],
     viewports: [
       {
         namespace: tracked.viewport,

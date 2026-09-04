@@ -41,6 +41,7 @@ export const cornerstone = {
 
 export const mswnh = {
   studyNotes: '@mswnh/extension-pacs.panelModule.studyNotes',
+  studyReport: '@mswnh/extension-pacs.panelModule.studyReport',
 };
 export const dicomsr = {
   sopClassHandler: '@ohif/extension-cornerstone-dicom-sr.sopClassHandlerModule.dicom-sr',
@@ -267,7 +268,12 @@ export const basicLayout = {
     // before the sidebars resolve.
     leftPanels: [ohif.thumbnailList],
     leftPanelResizable: true,
-    rightPanels: [mswnh.studyNotes, cornerstone.segmentation, cornerstone.measurements],
+    rightPanels: [
+      mswnh.studyReport,
+      mswnh.studyNotes,
+      cornerstone.segmentation,
+      cornerstone.measurements,
+    ],
     rightPanelClosed: true,
     rightPanelResizable: true,
     viewports: [

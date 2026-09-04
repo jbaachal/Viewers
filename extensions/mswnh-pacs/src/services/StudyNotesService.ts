@@ -23,6 +23,16 @@ type RequestOptions = {
   signal?: AbortSignal;
 };
 
+export class StudyNotesApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string
+  ) {
+    super(message);
+    this.name = 'StudyNotesApiError';
+  }
+}
+
 function getBaseUrl(): string {
   return (window.config?.workflowApi?.baseUrl || 'http://localhost:5255').replace(/\/$/, '');
 }
@@ -47,7 +57,10 @@ async function parseError(response: Response): Promise<Error> {
     // Keep the HTTP status when the response body cannot be parsed.
   }
 
-  return new Error(`Study Notes API returned ${response.status}: ${detail}`);
+  return new StudyNotesApiError(
+    response.status,
+    `Study Notes API returned ${response.status}: ${detail}`
+  );
 }
 
 async function request<T>(url: string, init: RequestInit): Promise<T> {

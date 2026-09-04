@@ -13,6 +13,7 @@ const ohif = {
 
 const mswnh = {
   studyNotes: '@mswnh/extension-pacs.panelModule.studyNotes',
+  studyReport: '@mswnh/extension-pacs.panelModule.studyReport',
 };
 
 export const cornerstone = {
@@ -98,7 +99,7 @@ function modeFactory({ modeConfiguration }) {
               leftPanelResizable: true,
               leftPanelClosed: true, // we have problem with rendering thumbnails for microscopy images
               // rightPanelClosed: true, // we do not have the save microscopy measurements yet
-              rightPanels: [mswnh.studyNotes, ohif.rightPanel],
+              rightPanels: [mswnh.studyReport, mswnh.studyNotes, ohif.rightPanel],
               rightPanelResizable: true,
               viewports: [
                 {
