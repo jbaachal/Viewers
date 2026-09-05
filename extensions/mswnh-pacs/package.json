@@ -6,6 +6,9 @@
   "license": "MIT",
   "private": true,
   "module": "src/index.ts",
+  "dependencies": {
+    "jspdf": "4.2.1"
+  },
   "engines": {
     "node": ">=24"
   },

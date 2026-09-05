@@ -2,9 +2,11 @@ export type StudyReport = {
   id: string;
   studyInstanceUid: string;
   subject: string;
+  comparison: string;
   technique: string;
   findings: string;
   conclusion: string;
+  recommendation?: string;
   isReported: boolean;
   createdBy: string;
   createdByName?: string;
@@ -20,9 +22,11 @@ export type StudyReport = {
 
 export type SaveStudyReportRequest = {
   subject: string;
+  comparison: string;
   technique: string;
   findings: string;
   conclusion: string;
+  recommendation?: string;
   signReport: boolean;
 };
 

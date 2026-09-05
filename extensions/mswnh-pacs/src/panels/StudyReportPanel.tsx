@@ -9,24 +9,23 @@ import {
   StudyReportsApiError,
   updateStudyReport,
 } from '../services/StudyReportsService';
+import {
+  createStudyReportPdf,
+  getStudyReportPdfFilename,
+  StudyReportPdfContext,
+} from '../utils/generateStudyReportPdf';
 
 const EMPTY_FORM: SaveStudyReportRequest = {
   subject: '',
+  comparison: 'No prior imaging available for comparison.',
   technique: '',
   findings: '',
   conclusion: '',
+  recommendation: '',
   signReport: false,
 };
 
-type StudyContext = {
-  studyInstanceUid: string;
-  patientName: string;
-  patientId: string;
-  sex: string;
-  birthDateOrAge: string;
-  history: string;
-  studyDate: string;
-};
+type StudyContext = StudyReportPdfContext;
 
 const styles: Record<string, React.CSSProperties> = {
   panel: { padding: 16, height: '100%', overflowY: 'auto', color: '#f3f4f6' },
@@ -68,10 +67,62 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#fff',
     cursor: 'pointer',
   },
+  previewOverlay: {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 10000,
+    display: 'flex',
+    flexDirection: 'column',
+    padding: 16,
+    background: 'rgba(0, 0, 0, 0.88)',
+  },
+  previewToolbar: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    padding: '10px 12px',
+    border: '1px solid #374151',
+    borderBottom: 0,
+    borderRadius: '6px 6px 0 0',
+    background: '#0f172a',
+  },
+  previewFrame: {
+    width: '100%',
+    flex: 1,
+    border: '1px solid #374151',
+    borderRadius: '0 0 6px 6px',
+    background: '#fff',
+  },
 };
 
 function valueOrUnknown(value: unknown): string {
   return typeof value === 'string' && value.trim() ? value : 'Not available';
+}
+
+function listOrUnknown(value: unknown): string {
+  if (Array.isArray(value)) {
+    const items = value.filter(item => typeof item === 'string' && item.trim());
+    return items.length ? items.join(', ') : 'Not available';
+  }
+  return valueOrUnknown(value);
+}
+
+function formatDicomDateTime(date: unknown, time: unknown): string {
+  const formattedDate = typeof date === 'string' && date ? utils.formatDate(date) : '';
+  const formattedTime = typeof time === 'string' && time ? utils.formatTime(time, 'HH:mm') : '';
+  return [formattedDate, formattedTime].filter(Boolean).join(' ') || 'Not available';
+}
+
+function formatPersonName(value: unknown): string {
+  if (!value) {
+    return 'Not available';
+  }
+  try {
+    return utils.formatPN(value) || 'Not available';
+  } catch {
+    return valueOrUnknown(value);
+  }
 }
 
 function formatAge(birthDate: unknown, studyDate: unknown, patientAge: unknown): string {
@@ -124,7 +175,17 @@ function getStudyContext(displaySetService): StudyContext | null {
         metadata.ReasonForTheRequestedProcedure ||
         metadata.RequestedProcedureDescription
     ),
-    studyDate: metadata.StudyDate ? utils.formatDate(metadata.StudyDate) : 'Not available',
+    modality: listOrUnknown(metadata.ModalitiesInStudy || metadata.Modality),
+    accessionNumber: valueOrUnknown(metadata.AccessionNumber),
+    priority: valueOrUnknown(metadata.RequestedProcedurePriority || metadata.Priority),
+    studyDateTime: formatDicomDateTime(metadata.StudyDate, metadata.StudyTime),
+    referralDateTime: formatDicomDateTime(
+      metadata.RequestedProcedureDate || metadata.ScheduledProcedureStepStartDate,
+      metadata.RequestedProcedureTime || metadata.ScheduledProcedureStepStartTime
+    ),
+    referringClinician: formatPersonName(
+      metadata.ReferringPhysicianName || metadata.RequestingPhysician
+    ),
   };
 }
 
@@ -137,8 +198,11 @@ export default function StudyReportPanel() {
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [printing, setPrinting] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const requestController = useRef<AbortController | null>(null);
+  const previewFrameRef = useRef<HTMLIFrameElement | null>(null);
 
   const authorizationHeaders = useCallback(
     () => userAuthenticationService.getAuthorizationHeader?.() || {},
@@ -191,14 +255,25 @@ export default function StudyReportPanel() {
     };
   }, [displaySetService, loadReport]);
 
+  useEffect(
+    () => () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    },
+    [previewUrl]
+  );
+
   const beginEditing = () => {
     setForm(
       report
         ? {
             subject: report.subject,
+            comparison: report.comparison,
             technique: report.technique,
             findings: report.findings,
             conclusion: report.conclusion,
+            recommendation: report.recommendation || '',
             signReport: report.isReported,
           }
         : EMPTY_FORM
@@ -212,9 +287,11 @@ export default function StudyReportPanel() {
       return;
     }
     if (
-      ![form.subject, form.technique, form.findings, form.conclusion].every(value => value.trim())
+      ![form.subject, form.comparison, form.technique, form.findings, form.conclusion].every(
+        value => value.trim()
+      )
     ) {
-      setError('Subject, technique, findings, and conclusion are required.');
+      setError('Subject, comparison, technique, findings, and conclusion are required.');
       return;
     }
 
@@ -241,6 +318,44 @@ export default function StudyReportPanel() {
     }
   };
 
+  const printReport = async () => {
+    if (!report || !context) {
+      return;
+    }
+    setPrinting(true);
+    setError(null);
+    try {
+      const pdf = await createStudyReportPdf(report, context);
+      setPreviewUrl(URL.createObjectURL(pdf.output('blob')));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to create the PDF report.');
+    } finally {
+      setPrinting(false);
+    }
+  };
+
+  const downloadPreview = () => {
+    if (!previewUrl || !context) {
+      return;
+    }
+    const link = document.createElement('a');
+    link.href = previewUrl;
+    link.download = getStudyReportPdfFilename(context);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  const printPreview = () => {
+    const previewWindow = previewFrameRef.current?.contentWindow;
+    if (!previewWindow) {
+      setError('The report preview is not ready to print. Please try again.');
+      return;
+    }
+    previewWindow.focus();
+    previewWindow.print();
+  };
+
   return (
     <div style={styles.panel}>
       <div style={styles.header}>
@@ -254,6 +369,16 @@ export default function StudyReportPanel() {
           >
             Refresh
           </button>
+          {report && !editing && (
+            <button
+              type="button"
+              style={styles.secondaryButton}
+              onClick={printReport}
+              disabled={printing}
+            >
+              {printing ? 'Preparing...' : 'Print'}
+            </button>
+          )}
           {!editing && (
             <button
               type="button"
@@ -281,8 +406,18 @@ export default function StudyReportPanel() {
             <span style={styles.value}>{context.sex}</span>
             <span style={styles.label}>Patient ID</span>
             <span style={styles.value}>{context.patientId}</span>
-            <span style={styles.label}>Study date</span>
-            <span style={styles.value}>{context.studyDate}</span>
+            <span style={styles.label}>Modality</span>
+            <span style={styles.value}>{context.modality}</span>
+            <span style={styles.label}>Accession no.</span>
+            <span style={styles.value}>{context.accessionNumber}</span>
+            <span style={styles.label}>Priority</span>
+            <span style={styles.value}>{context.priority}</span>
+            <span style={styles.label}>Study date & time</span>
+            <span style={styles.value}>{context.studyDateTime}</span>
+            <span style={styles.label}>Referral date & time</span>
+            <span style={styles.value}>{context.referralDateTime}</span>
+            <span style={styles.label}>Referring clinician</span>
+            <span style={styles.value}>{context.referringClinician}</span>
             <span style={styles.label}>History</span>
             <span style={styles.value}>{context.history}</span>
           </div>
@@ -316,17 +451,26 @@ export default function StudyReportPanel() {
               {report.isReported ? 'REPORTED' : 'DRAFT'}
             </span>
           </div>
-          {(['Technique', 'Findings', 'Conclusion'] as const).map(label => (
-            <section
-              key={label}
-              style={{ marginTop: 14 }}
-            >
-              <div style={styles.label}>{label}</div>
-              <div style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
-                {report[label.toLowerCase() as 'technique' | 'findings' | 'conclusion']}
-              </div>
-            </section>
-          ))}
+          {(['Comparison', 'Technique', 'Findings', 'Conclusion', 'Recommendation'] as const).map(
+            label => (
+              <section
+                key={label}
+                style={{ marginTop: 14 }}
+              >
+                <div style={styles.label}>{label}</div>
+                <div style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+                  {report[
+                    label.toLowerCase() as
+                      | 'comparison'
+                      | 'technique'
+                      | 'findings'
+                      | 'conclusion'
+                      | 'recommendation'
+                  ] || 'Not provided'}
+                </div>
+              </section>
+            )
+          )}
           <div style={{ ...styles.label, marginTop: 14 }}>
             Reported by: {report.reportedByName || report.reportedBy || 'Not signed'}
           </div>
@@ -351,7 +495,16 @@ export default function StudyReportPanel() {
           style={styles.card}
           onSubmit={event => event.preventDefault()}
         >
-          {(['subject', 'technique', 'findings', 'conclusion'] as const).map(field => (
+          {(
+            [
+              'subject',
+              'comparison',
+              'technique',
+              'findings',
+              'conclusion',
+              'recommendation',
+            ] as const
+          ).map(field => (
             <label
               key={field}
               style={{ display: 'block', marginTop: 10 }}
@@ -372,7 +525,7 @@ export default function StudyReportPanel() {
                   style={{ ...styles.field, resize: 'vertical' }}
                   rows={field === 'findings' ? 8 : 4}
                   maxLength={field === 'findings' ? 20000 : 10000}
-                  required
+                  required={field !== 'recommendation'}
                   value={form[field]}
                   onChange={event =>
                     setForm(current => ({ ...current, [field]: event.target.value }))
@@ -408,6 +561,47 @@ export default function StudyReportPanel() {
             </button>
           </div>
         </form>
+      )}
+      {previewUrl && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Radiology report PDF preview"
+          style={styles.previewOverlay}
+        >
+          <div style={styles.previewToolbar}>
+            <strong>Radiology Report Preview</strong>
+            <div style={styles.row}>
+              <button
+                type="button"
+                style={styles.button}
+                onClick={printPreview}
+              >
+                Print
+              </button>
+              <button
+                type="button"
+                style={styles.secondaryButton}
+                onClick={downloadPreview}
+              >
+                Download PDF
+              </button>
+              <button
+                type="button"
+                style={styles.secondaryButton}
+                onClick={() => setPreviewUrl(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+          <iframe
+            ref={previewFrameRef}
+            title="Radiology report PDF preview"
+            src={previewUrl}
+            style={styles.previewFrame}
+          />
+        </div>
       )}
     </div>
   );
