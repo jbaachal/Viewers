@@ -52,6 +52,9 @@ window.config = {
   showWarningMessageForCrossOrigin: false,
   showCPUFallbackMessage: true,
   showLoadingIndicator: true,
+  investigationalUseDialog: {
+    option: 'never',
+  },
 
   defaultDataSourceName: 'dicomweb',
 
