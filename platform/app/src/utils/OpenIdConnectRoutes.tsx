@@ -97,7 +97,7 @@ function LoginComponent(userManager) {
   return null;
 }
 
-function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService }) {
+function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService, children }) {
   const userManager = useMemo(() => initUserManager(oidc, routerBasename), [oidc, routerBasename]);
 
   const getAuthorizationHeader = () => {
@@ -182,6 +182,14 @@ function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService }
   const silent_refresh_uri = new URL(silentRedirectURI).pathname; //.replace(routerBasename,'')
   const post_logout_redirect_uri = new URL(postLogoutRedirectURI).pathname; //.replace(routerBasename,'');
 
+  const isAuthenticationRoute = [
+    redirect_uri,
+    silent_refresh_uri,
+    post_logout_redirect_uri,
+    '/login',
+    '/logout',
+  ].includes(pathname);
+
   // const pathnameRelative = pathname.replace(routerBasename,'');
 
   if (pathname !== redirect_uri) {
@@ -189,58 +197,62 @@ function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService }
   }
 
   return (
-    <Routes>
-      <Route
-        path={silent_refresh_uri}
-        onEnter={window.location.reload}
-      />
-      <Route
-        path={post_logout_redirect_uri}
-        element={
-          <SignoutCallbackComponent
-            userManager={userManager}
-            successCallback={() => console.log('Signout successful')}
-            errorCallback={error => {
-              console.warn(error);
-              console.warn('Signout failed');
-            }}
-          />
-        }
-      />
-      <Route
-        path={redirect_uri}
-        element={
-          <CallbackPage
-            userManager={userManager}
-            onRedirectSuccess={user => {
-              const { pathname, search = '' } = JSON.parse(
-                sessionStorage.getItem('ohif-redirect-to')
-              );
+    <>
+      <Routes>
+        <Route
+          path={silent_refresh_uri}
+          onEnter={window.location.reload}
+        />
+        <Route
+          path={post_logout_redirect_uri}
+          element={
+            <SignoutCallbackComponent
+              userManager={userManager}
+              successCallback={() => console.log('Signout successful')}
+              errorCallback={error => {
+                console.warn(error);
+                console.warn('Signout failed');
+              }}
+            />
+          }
+        />
+        <Route
+          path={redirect_uri}
+          element={
+            <CallbackPage
+              userManager={userManager}
+              onRedirectSuccess={user => {
+                const savedRedirect = sessionStorage.getItem('ohif-redirect-to');
+                const { pathname = '/', search = '' } = savedRedirect
+                  ? JSON.parse(savedRedirect)
+                  : {};
 
-              userAuthenticationService.setUser(user);
+                userAuthenticationService.setUser(user);
 
-              navigate({
-                pathname,
-                search,
-              });
-            }}
-          />
-        }
-      />
-      <Route
-        path="/login"
-        element={
-          <LoginComponent
-            userManager={userManager}
-            oidcAuthority={oidcAuthority}
-          />
-        }
-      />
-      <Route
-        path="/logout"
-        element={<LogoutComponent userManager={userManager} />}
-      />
-    </Routes>
+                navigate({
+                  pathname,
+                  search,
+                });
+              }}
+            />
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            <LoginComponent
+              userManager={userManager}
+              oidcAuthority={oidcAuthority}
+            />
+          }
+        />
+        <Route
+          path="/logout"
+          element={<LogoutComponent userManager={userManager} />}
+        />
+      </Routes>
+      {!isAuthenticationRoute && children}
+    </>
   );
 }
 

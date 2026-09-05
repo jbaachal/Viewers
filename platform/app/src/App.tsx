@@ -142,8 +142,6 @@ function App({
 
   const CombinedProviders = ({ children }) => Compose({ components: providers, children });
 
-  let authRoutes = null;
-
   // customizationService.init(extensionManager) runs in appInit after extensions register;
   // do not call init again here — repeated init would duplicate-merge unless guarded (see CustomizationService.init).
 
@@ -159,13 +157,17 @@ function App({
     showStudyList,
   });
 
-  if (oidc) {
-    authRoutes = (
+  let routedContent = appRoutes;
+
+  if (oidc?.length) {
+    routedContent = (
       <OpenIdConnectRoutes
         oidc={oidc}
         routerBasename={routerBasename}
         userAuthenticationService={userAuthenticationService}
-      />
+      >
+        {appRoutes}
+      </OpenIdConnectRoutes>
     );
   }
 
@@ -175,8 +177,7 @@ function App({
         basename={routerBasename}
         future={routerFutureFlags}
       >
-        {authRoutes}
-        {appRoutes}
+        {routedContent}
       </BrowserRouter>
     </CombinedProviders>
   );

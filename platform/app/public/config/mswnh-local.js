@@ -89,7 +89,7 @@ window.config = {
       client_id: 'ohif-viewer',
 
       redirect_uri: 'http://localhost:3001/callback',
-      post_logout_redirect_uri: 'http://localhost:3001/',
+      post_logout_redirect_uri: 'http://localhost:3001/logout-redirect.html',
 
       response_type: 'code',
       scope: 'openid profile email',
