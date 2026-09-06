@@ -1,5 +1,5 @@
 import React from 'react';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Route, Routes, useLocation, useNavigate } from 'react-router';
 import CallbackPage from '../routes/CallbackPage';
 import SignoutCallbackComponent from '../routes/SignoutCallbackComponent';
@@ -51,16 +51,38 @@ const initUserManager = (oidc, routerBasename) => {
 };
 
 function LogoutComponent(props) {
-  const { userManager } = props;
-  localStorage.setItem('signoutEvent', 'true');
+  const { userManager, userAuthenticationService } = props;
   const location = useLocation();
   const query = new URLSearchParams(location.search);
-  userManager.signoutRedirect({
-    post_logout_redirect_uri: sanitizeSameOriginRedirect(
-      query.get('redirect_uri'),
-      window.location.origin
-    ),
-  });
+
+  useEffect(() => {
+    let isActive = true;
+
+    const signOut = async () => {
+      localStorage.setItem('signoutEvent', 'true');
+      const serviceUser = userAuthenticationService.getUser?.();
+      const storedUser = serviceUser || (await userManager.getUser());
+
+      if (!isActive) {
+        return;
+      }
+
+      await userManager.signoutRedirect({
+        id_token_hint: storedUser?.id_token,
+        post_logout_redirect_uri: sanitizeSameOriginRedirect(
+          query.get('redirect_uri'),
+          window.location.origin
+        ),
+      });
+    };
+
+    signOut().catch(error => console.error('Unable to sign out', error));
+
+    return () => {
+      isActive = false;
+    };
+  }, [userManager, userAuthenticationService]);
+
   return null;
 }
 
@@ -99,11 +121,9 @@ function LoginComponent(userManager) {
 
 function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService, children }) {
   const userManager = useMemo(() => initUserManager(oidc, routerBasename), [oidc, routerBasename]);
-  const currentUserRef = useRef(null);
-  const authenticationStateRef = useRef({ enabled: false });
 
   const getAuthorizationHeader = () => {
-    const user = currentUserRef.current;
+    const user = userAuthenticationService.getUser();
 
     // if the user is null return early, next time
     // we hit this function we will have a user
@@ -146,23 +166,8 @@ function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService, 
 
   useEffect(() => {
     userAuthenticationService.setServiceImplementation({
-      getState: () => authenticationStateRef.current,
-      setUser: user => {
-        currentUserRef.current = user;
-      },
-      getUser: () => currentUserRef.current,
       getAuthorizationHeader,
       handleUnauthenticated,
-      reset: () => {
-        currentUserRef.current = null;
-        authenticationStateRef.current = { enabled: false };
-      },
-      set: state => {
-        authenticationStateRef.current = {
-          ...authenticationStateRef.current,
-          ...state,
-        };
-      },
     });
 
     userAuthenticationService.set({ enabled: true });
@@ -278,7 +283,12 @@ function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService, 
         />
         <Route
           path="/logout"
-          element={<LogoutComponent userManager={userManager} />}
+          element={
+            <LogoutComponent
+              userManager={userManager}
+              userAuthenticationService={userAuthenticationService}
+            />
+          }
         />
       </Routes>
       {!isAuthenticationRoute && children}
