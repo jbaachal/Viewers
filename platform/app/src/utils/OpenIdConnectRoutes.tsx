@@ -1,5 +1,5 @@
 import React from 'react';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Route, Routes, useLocation, useNavigate } from 'react-router';
 import CallbackPage from '../routes/CallbackPage';
 import SignoutCallbackComponent from '../routes/SignoutCallbackComponent';
@@ -99,9 +99,11 @@ function LoginComponent(userManager) {
 
 function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService, children }) {
   const userManager = useMemo(() => initUserManager(oidc, routerBasename), [oidc, routerBasename]);
+  const currentUserRef = useRef(null);
+  const authenticationStateRef = useRef({ enabled: false });
 
   const getAuthorizationHeader = () => {
-    const user = userAuthenticationService.getUser();
+    const user = currentUserRef.current;
 
     // if the user is null return early, next time
     // we hit this function we will have a user
@@ -143,24 +145,52 @@ function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService, 
   }, []);
 
   useEffect(() => {
-    userAuthenticationService.set({ enabled: true });
-
     userAuthenticationService.setServiceImplementation({
+      getState: () => authenticationStateRef.current,
+      setUser: user => {
+        currentUserRef.current = user;
+      },
+      getUser: () => currentUserRef.current,
       getAuthorizationHeader,
       handleUnauthenticated,
+      reset: () => {
+        currentUserRef.current = null;
+        authenticationStateRef.current = { enabled: false };
+      },
+      set: state => {
+        authenticationStateRef.current = {
+          ...authenticationStateRef.current,
+          ...state,
+        };
+      },
     });
+
+    userAuthenticationService.set({ enabled: true });
+    userManager
+      .getUser()
+      .then(user => {
+        if (user) {
+          userAuthenticationService.setUser(user);
+        }
+      })
+      .catch(error => console.error('Unable to restore the authenticated user', error));
   }, []);
 
   useEffect(() => {
     const userLoadedHandler = user => {
       userAuthenticationService.setUser(user);
     };
+    const userUnloadedHandler = () => {
+      userAuthenticationService.setUser(null);
+    };
 
     userManager.events.addUserLoaded(userLoadedHandler);
+    userManager.events.addUserUnloaded(userUnloadedHandler);
 
     // Cleanup on component unmount.
     return () => {
       userManager.events.removeUserLoaded(userLoadedHandler);
+      userManager.events.removeUserUnloaded(userUnloadedHandler);
     };
   }, []);
 
