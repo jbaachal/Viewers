@@ -5,6 +5,9 @@
   "author": "MSWNH",
   "license": "MIT",
   "private": true,
+  "scripts": {
+    "test:unit": "jest --runInBand"
+  },
   "module": "src/index.ts",
   "dependencies": {
     "jspdf": "4.2.1"
@@ -15,7 +18,9 @@
   "peerDependencies": {
     "@ohif/core": "workspace:*",
     "@ohif/ui": "workspace:*",
+    "@ohif/ui-next": "workspace:*",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.30.3"
   }
 }

@@ -6,13 +6,16 @@ window.config = {
     baseUrl: 'http://localhost:5255',
   },
 
+  dashboard: {
+    useMockData: false,
+    timeZone: 'Africa/Kampala',
+  },
+
   whiteLabeling: {
     createLogoComponentFn: function (React) {
       return React.createElement(
-        'a',
+        'div',
         {
-          href: '/',
-          target: '_self',
           style: {
             display: 'flex',
             alignItems: 'center',
@@ -21,19 +24,29 @@ window.config = {
             maxWidth: '620px',
           },
         },
-        React.createElement('img', {
-          src: '/hospital-logo.svg',
-          alt: 'Mulago Specialised Women and Neonatal Hospital',
-          style: {
-            height: '42px',
-            width: 'auto',
-            objectFit: 'contain',
-          },
-        }),
-
         React.createElement(
-          'span',
+          'a',
           {
+            href: '/dashboard',
+            target: '_self',
+            'aria-label': 'Go to MSWNH PACS dashboard',
+            style: { display: 'flex', textDecoration: 'none' },
+          },
+          React.createElement('img', {
+            src: '/hospital-logo.svg',
+            alt: 'Mulago Specialised Women and Neonatal Hospital',
+            style: {
+              height: '42px',
+              width: 'auto',
+              objectFit: 'contain',
+            },
+          })
+        ),
+        React.createElement(
+          'a',
+          {
+            href: '/dashboard',
+            target: '_self',
             style: {
               color: '#ffffff',
               fontSize: '17px',
@@ -41,6 +54,7 @@ window.config = {
               letterSpacing: '0.4px',
               lineHeight: '1.2',
               whiteSpace: 'nowrap',
+              textDecoration: 'none',
             },
           },
           'MSWNH PACS'

@@ -1,0 +1,22 @@
+.mswnh-dashboard {
+  --mswnh-dashboard-critical: 239 68 68;
+  --mswnh-dashboard-warning: 251 191 36;
+  --mswnh-dashboard-healthy: 52 211 153;
+  --mswnh-dashboard-info: 56 189 248;
+  color-scheme: dark;
+}
+
+.mswnh-dashboard * {
+  scrollbar-color: hsl(var(--muted)) transparent;
+  scrollbar-width: thin;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mswnh-dashboard *,
+  .mswnh-dashboard *::before,
+  .mswnh-dashboard *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

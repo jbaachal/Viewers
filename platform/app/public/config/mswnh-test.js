@@ -1,4 +1,4 @@
-/** Local UI test configuration for the MSWNH Study Notes extension. */
+/** Local authenticated MSWNH PACS configuration. */
 window.config = {
   routerBasename: '/',
   showStudyList: true,
@@ -9,6 +9,10 @@ window.config = {
   workflowApi: {
     baseUrl: 'http://localhost:5255',
   },
+  dashboard: {
+    useMockData: false,
+    timeZone: 'Africa/Kampala',
+  },
   extensions: [],
   modes: [],
   defaultDataSourceName: 'dicomweb',
@@ -17,25 +21,31 @@ window.config = {
       namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
       sourceName: 'dicomweb',
       configuration: {
-        friendlyName: 'OHIF Public Test Data',
-        name: 'aws',
-        wadoUriRoot: 'https://d14fa38qiwhyfd.cloudfront.net/dicomweb',
-        qidoRoot: 'https://d14fa38qiwhyfd.cloudfront.net/dicomweb',
-        wadoRoot: 'https://d14fa38qiwhyfd.cloudfront.net/dicomweb',
-        qidoSupportsIncludeField: false,
-        supportsReject: false,
+        friendlyName: 'MSWNH Development PACS',
+        name: 'PACS_ARCHIVE',
+        wadoUriRoot: 'http://localhost:8080/dcm4chee-arc/aets/PACS_ARCHIVE/wado',
+        qidoRoot: 'http://localhost:8080/dcm4chee-arc/aets/PACS_ARCHIVE/rs',
+        wadoRoot: 'http://localhost:8080/dcm4chee-arc/aets/PACS_ARCHIVE/rs',
+        qidoSupportsIncludeField: true,
+        supportsReject: true,
         imageRendering: 'wadors',
         thumbnailRendering: 'wadors',
         enableStudyLazyLoad: true,
-        supportsFuzzyMatching: false,
+        supportsFuzzyMatching: true,
         supportsWildcard: true,
-        staticWado: true,
-        singlepart: 'bulkdata,video,pdf',
-        bulkDataURI: {
-          enabled: true,
-          relativeResolution: 'studies',
-        },
       },
+    },
+  ],
+  oidc: [
+    {
+      authority: 'http://localhost:8180/realms/PACS',
+      client_id: 'ohif-viewer',
+      redirect_uri: 'http://localhost:3000/callback',
+      post_logout_redirect_uri: 'http://localhost:3000/logout-redirect.html',
+      response_type: 'code',
+      scope: 'openid profile email',
+      useAuthorizationCodeFlow: true,
+      automaticSilentRenew: true,
     },
   ],
 };

@@ -6,6 +6,10 @@ declare global {
       workflowApi?: {
         baseUrl?: string;
       };
+      dashboard?: {
+        useMockData?: boolean;
+        timeZone?: string;
+      };
       [key: string]: any;
     };
   }
