@@ -4,8 +4,14 @@ import { themePresets } from '../themes';
 
 const STORAGE_KEY_THEME = 'ohif:theme';
 const STORAGE_KEY_CUSTOM_CSS = 'ohif:custom-theme-css';
+const STORAGE_KEY_APPEARANCE = 'ohif:appearance';
 const CUSTOM_STYLE_ID = 'ohif-custom-theme';
 const VALID_THEMES = new Set(['default', 'custom', ...themePresets.map(p => p.name)]);
+
+export type AppearanceMode = 'light' | 'dark' | 'system';
+
+const VALID_APPEARANCE_MODES = new Set<AppearanceMode>(['light', 'dark', 'system']);
+const DARK_MODE_MEDIA_QUERY = '(prefers-color-scheme: dark)';
 
 type ActiveThemeContextType = {
   activeTheme: string;
@@ -13,7 +19,35 @@ type ActiveThemeContextType = {
   customCss: string;
   applyCustomTheme: (cssText: string) => boolean;
   clearCustomTheme: () => void;
+  appearanceMode: AppearanceMode;
+  resolvedAppearance: Exclude<AppearanceMode, 'system'>;
+  setAppearanceMode: (mode: AppearanceMode) => void;
 };
+
+function getStoredAppearance(): AppearanceMode {
+  if (typeof window === 'undefined') return 'dark';
+  const stored = localStorage.getItem(STORAGE_KEY_APPEARANCE) as AppearanceMode | null;
+  return stored && VALID_APPEARANCE_MODES.has(stored) ? stored : 'dark';
+}
+
+function resolveAppearance(mode: AppearanceMode): Exclude<AppearanceMode, 'system'> {
+  if (mode !== 'system') return mode;
+  return window.matchMedia?.(DARK_MODE_MEDIA_QUERY).matches ? 'dark' : 'light';
+}
+
+function applyAppearance(mode: AppearanceMode): Exclude<AppearanceMode, 'system'> {
+  const resolved = resolveAppearance(mode);
+  document.body.classList.remove('light', 'dark');
+  document.body.classList.add(resolved);
+  document.documentElement.style.colorScheme = resolved;
+  return resolved;
+}
+
+/** Applies the saved appearance before React finishes booting to avoid a theme flash. */
+export function initializeAppearance() {
+  if (typeof document === 'undefined') return;
+  applyAppearance(getStoredAppearance());
+}
 
 // 'custom' is deliberately not URL-addressable: the CSS behind it lives only in
 // the visitor's own localStorage, so a ?theme=custom link cannot reproduce a look
@@ -96,6 +130,13 @@ function injectCustomStyles(vars: string[]) {
 }
 
 export function ActiveThemeProvider({ children }: { children: React.ReactNode }) {
+  const [appearanceMode, setAppearanceModeState] = React.useState<AppearanceMode>(() =>
+    getStoredAppearance()
+  );
+  const [resolvedAppearance, setResolvedAppearance] = React.useState<
+    Exclude<AppearanceMode, 'system'>
+  >(() => (typeof document === 'undefined' ? 'dark' : applyAppearance(getStoredAppearance())));
+
   const [activeTheme, setActiveThemeState] = React.useState<string>(() => {
     if (typeof window === 'undefined') return 'default';
     const urlTheme = new URLSearchParams(window.location.search).get('theme');
@@ -161,6 +202,23 @@ export function ActiveThemeProvider({ children }: { children: React.ReactNode })
     localStorage.removeItem(STORAGE_KEY_THEME);
   }, []);
 
+  const setAppearanceMode = React.useCallback((mode: AppearanceMode) => {
+    if (!VALID_APPEARANCE_MODES.has(mode)) return;
+    localStorage.setItem(STORAGE_KEY_APPEARANCE, mode);
+    setAppearanceModeState(mode);
+    setResolvedAppearance(applyAppearance(mode));
+  }, []);
+
+  React.useEffect(() => {
+    setResolvedAppearance(applyAppearance(appearanceMode));
+    if (appearanceMode !== 'system' || !window.matchMedia) return;
+
+    const mediaQuery = window.matchMedia(DARK_MODE_MEDIA_QUERY);
+    const handleSystemAppearanceChange = () => setResolvedAppearance(applyAppearance('system'));
+    mediaQuery.addEventListener?.('change', handleSystemAppearanceChange);
+    return () => mediaQuery.removeEventListener?.('change', handleSystemAppearanceChange);
+  }, [appearanceMode]);
+
   // Persist URL param override to localStorage
   React.useEffect(() => {
     const urlTheme = new URLSearchParams(window.location.search).get('theme');
@@ -188,8 +246,26 @@ export function ActiveThemeProvider({ children }: { children: React.ReactNode })
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const value = React.useMemo(
-    () => ({ activeTheme, setActiveTheme, customCss, applyCustomTheme, clearCustomTheme }),
-    [activeTheme, setActiveTheme, customCss, applyCustomTheme, clearCustomTheme]
+    () => ({
+      activeTheme,
+      setActiveTheme,
+      customCss,
+      applyCustomTheme,
+      clearCustomTheme,
+      appearanceMode,
+      resolvedAppearance,
+      setAppearanceMode,
+    }),
+    [
+      activeTheme,
+      setActiveTheme,
+      customCss,
+      applyCustomTheme,
+      clearCustomTheme,
+      appearanceMode,
+      resolvedAppearance,
+      setAppearanceMode,
+    ]
   );
 
   return <ActiveThemeContext.Provider value={value}>{children}</ActiveThemeContext.Provider>;

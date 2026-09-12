@@ -21,6 +21,7 @@ export { ImageViewerContext, ImageViewerProvider, useImageViewer };
 export { DragAndDropProvider };
 export { CineProvider, useCine };
 export { IconPresentationProvider, useIconPresentation } from './IconPresentationProvider';
-export { ActiveThemeProvider, useActiveTheme } from './ActiveThemeProvider';
+export { ActiveThemeProvider, initializeAppearance, useActiveTheme } from './ActiveThemeProvider';
+export type { AppearanceMode } from './ActiveThemeProvider';
 export { themePresets } from '../themes';
 export type { ThemePreset } from '../themes';

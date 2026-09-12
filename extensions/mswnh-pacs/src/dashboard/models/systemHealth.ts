@@ -15,6 +15,7 @@ export type SystemComponentKind =
   | 'DIRECTORY'
   | 'PROXY'
   | 'MODALITY'
+  | 'DICOM_ASSOCIATIONS'
   | 'DICOM_WORKLIST'
   | 'HL7'
   | 'BACKUP'
@@ -39,6 +40,37 @@ export type StorageHealth = {
   estimatedExhaustionDate: string | null;
 };
 
+export type DicomAeTitleHealth = {
+  id: string;
+  aeTitle: string;
+  callingAeTitle: string;
+  host: string;
+  port: number;
+  useTls: boolean;
+  enabled: boolean;
+  state: HealthState;
+  lastCheckedAt: string;
+  responseTimeMs: number | null;
+  message: string;
+};
+
+export type DicomDeviceHealth = {
+  id: string;
+  name: string;
+  modalities: string[];
+  manufacturer: string | null;
+  model: string | null;
+  serialNumber: string | null;
+  location: string | null;
+  department: string | null;
+  state: HealthState;
+  lastCheckedAt: string;
+  responseTimeMs: number | null;
+  message: string;
+  lastStudyReceivedAt: string | null;
+  aeTitles: DicomAeTitleHealth[];
+};
+
 export type SystemHealthSnapshot = {
   overallState: HealthState;
   availabilityPercent: number;
@@ -47,6 +79,7 @@ export type SystemHealthSnapshot = {
   lastSuccessfulBackupAt: string | null;
   failedDicomAssociations24Hours: number | null;
   offlineModalityCount: number | null;
+  devices: DicomDeviceHealth[];
   components: SystemHealthComponent[];
   generatedAt: string;
   dataSource: 'MOCK' | 'LIVE';

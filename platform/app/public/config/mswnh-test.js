@@ -2,6 +2,7 @@
 window.config = {
   routerBasename: '/',
   showStudyList: true,
+  defaultLoginRedirectPath: '/dashboard',
   showWarningMessageForCrossOrigin: false,
   showCPUFallbackMessage: true,
   showLoadingIndicator: true,

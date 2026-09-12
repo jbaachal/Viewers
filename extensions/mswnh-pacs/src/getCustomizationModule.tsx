@@ -50,6 +50,36 @@ export default function getCustomizationModule() {
                   />
                 ),
               },
+              {
+                path: '/dashboard/administration',
+                private: true,
+                children: (props: any) => (
+                  <DashboardRoute
+                    page="administration"
+                    servicesManager={props.servicesManager}
+                  />
+                ),
+              },
+              {
+                path: '/dashboard/administration/sla',
+                private: true,
+                children: (props: any) => (
+                  <DashboardRoute
+                    page="sla"
+                    servicesManager={props.servicesManager}
+                  />
+                ),
+              },
+              {
+                path: '/dashboard/audit',
+                private: true,
+                children: (props: any) => (
+                  <DashboardRoute
+                    page="audit"
+                    servicesManager={props.servicesManager}
+                  />
+                ),
+              },
             ],
           },
         },

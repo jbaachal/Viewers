@@ -6,9 +6,35 @@
   color-scheme: dark;
 }
 
+.light .mswnh-dashboard {
+  color-scheme: light;
+}
+
 .mswnh-dashboard * {
   scrollbar-color: hsl(var(--muted)) transparent;
   scrollbar-width: thin;
+}
+
+.mswnh-dashboard :focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+.mswnh-dashboard-skip-link {
+  position: fixed;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 200;
+  transform: translateY(-180%);
+}
+
+.mswnh-dashboard-skip-link:focus {
+  transform: translateY(0);
+}
+
+.mswnh-scroll-region {
+  overscroll-behavior-inline: contain;
+  scrollbar-gutter: stable;
 }
 
 @media (prefers-reduced-motion: reduce) {

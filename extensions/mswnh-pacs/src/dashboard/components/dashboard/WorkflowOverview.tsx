@@ -23,7 +23,7 @@ export function WorkflowOverview({
   onSelectStatus: (status: StudyStatus | null) => void;
 }) {
   const combinedStages = [
-    ...stages.filter(stage => !['CANCELLED', 'INCOMPLETE'].includes(stage.status)),
+    ...stages.filter(stage => !['VERIFIED', 'CANCELLED', 'INCOMPLETE'].includes(stage.status)),
     {
       status: 'INCOMPLETE' as const,
       label: 'Cancelled / Incomplete',
@@ -82,6 +82,11 @@ export function WorkflowOverview({
                 <div className="bg-muted h-1.5 overflow-hidden rounded-full">
                   <div
                     className={`h-full rounded-full ${ageingStyles[bucket.tone]}`}
+                    role="progressbar"
+                    aria-label={`${bucket.label}: ${bucket.count} studies`}
+                    aria-valuemin={0}
+                    aria-valuemax={maxAgeing}
+                    aria-valuenow={bucket.count}
                     style={{
                       width: `${Math.max((bucket.count / maxAgeing) * 100, bucket.count ? 8 : 0)}%`,
                     }}

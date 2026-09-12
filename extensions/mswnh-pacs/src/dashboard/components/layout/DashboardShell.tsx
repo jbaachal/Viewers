@@ -19,10 +19,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(
-        'mswnh-dashboard-sidebar-collapsed',
-        String(sidebarCollapsed)
-      );
+      window.localStorage.setItem('mswnh-dashboard-sidebar-collapsed', String(sidebarCollapsed));
     } catch {
       // The sidebar still works when browser storage is unavailable.
     }
@@ -30,6 +27,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="mswnh-dashboard bg-background text-foreground flex h-screen min-h-0 flex-col overflow-hidden">
+      <a
+        href="#dashboard-main-content"
+        className="mswnh-dashboard-skip-link bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-semibold shadow-lg"
+      >
+        Skip to main content
+      </a>
       <DashboardHeader
         onOpenNavigation={() => setNavigationOpen(true)}
         sidebarCollapsed={sidebarCollapsed}
@@ -39,6 +42,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         {!sidebarCollapsed && <DashboardSidebar />}
         <main
           id="dashboard-main-content"
+          tabIndex={-1}
           className="min-w-0 flex-1 overflow-y-auto"
         >
           {initializationError ? (

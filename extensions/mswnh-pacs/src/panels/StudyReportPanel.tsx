@@ -359,7 +359,7 @@ export default function StudyReportPanel() {
   return (
     <div style={styles.panel}>
       <div style={styles.header}>
-        <h2 style={{ margin: 0, fontSize: 18 }}>Study Report</h2>
+        <h2 style={{ margin: 0, fontSize: 18 }}>Report</h2>
         <div style={styles.row}>
           <button
             type="button"

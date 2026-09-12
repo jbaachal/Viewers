@@ -26,6 +26,21 @@ const pageCopy = {
       'Archive, viewer, interface, modality, backup, and storage health views will be assembled in Stage 7.',
     icon: 'CloudSettings',
   },
+  administration: {
+    title: 'User Management',
+    description: 'PACS account and role administration.',
+    icon: 'Settings',
+  },
+  sla: {
+    title: 'SLA Configuration',
+    description: 'Reporting targets and warning thresholds.',
+    icon: 'SortingAscending',
+  },
+  audit: {
+    title: 'Audit Log',
+    description: 'PACS workflow, clinical record, administration, and security activity.',
+    icon: 'ListView',
+  },
 } as const;
 
 export type DashboardPageId = keyof typeof pageCopy;
@@ -36,9 +51,6 @@ export function DashboardStagePlaceholder({ page }: { page: DashboardPageId }) {
     <div className="mx-auto max-w-7xl p-4 md:p-6">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-muted-foreground mb-1 text-xs font-semibold uppercase tracking-[0.16em]">
-            MSWNH PACS
-          </div>
           <h1 className="text-foreground text-2xl font-semibold">{content.title}</h1>
         </div>
         <span className="border-primary/30 bg-primary/10 text-primary rounded-full border px-3 py-1 text-xs font-medium">

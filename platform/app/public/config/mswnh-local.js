@@ -1,6 +1,7 @@
 window.config = {
   routerBasename: '/',
   showStudyList: true,
+  defaultLoginRedirectPath: '/dashboard',
 
   workflowApi: {
     baseUrl: 'http://localhost:5255',
@@ -48,7 +49,7 @@ window.config = {
             href: '/dashboard',
             target: '_self',
             style: {
-              color: '#ffffff',
+              color: 'hsl(var(--foreground))',
               fontSize: '17px',
               fontWeight: '600',
               letterSpacing: '0.4px',

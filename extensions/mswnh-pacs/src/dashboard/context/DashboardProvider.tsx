@@ -62,11 +62,24 @@ export function DashboardProvider({
 
   const demoRole = useMemo<DemoRole>(() => {
     const roles = new Set(getRealmRoles(user).map(role => role.toUpperCase()));
-    if (['ADMINISTRATOR', 'PACS_ADMIN', 'ROOT', 'ADMIN'].some(role => roles.has(role))) {
+    if (
+      [
+        'SUPER_ADMINISTRATOR',
+        'PACS_ADMINISTRATOR',
+        'ADMINISTRATOR',
+        'PACS_ADMIN',
+        'ROOT',
+        'ADMIN',
+      ].some(role => roles.has(role))
+    ) {
       return 'PACS_ADMIN';
     }
-    if (['RADIOLOGY_MANAGER', 'MANAGEMENT'].some(role => roles.has(role))) return 'MANAGEMENT';
-    return roles.has('RADIOLOGIST') ? 'RADIOLOGIST' : 'READ_ONLY';
+    if (['DEPARTMENT_HEAD', 'RADIOLOGY_MANAGER', 'MANAGEMENT'].some(role => roles.has(role))) {
+      return 'MANAGEMENT';
+    }
+    return ['RADIOLOGIST', 'RADIOLOGY_RESIDENT'].some(role => roles.has(role))
+      ? 'RADIOLOGIST'
+      : 'READ_ONLY';
   }, [user]);
 
   const value = useMemo(

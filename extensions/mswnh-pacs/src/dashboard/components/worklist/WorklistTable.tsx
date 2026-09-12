@@ -27,11 +27,15 @@ function SortHeader({
   onSort: (field: StudySortField) => void;
 }) {
   return (
-    <th className={headerClass}>
+    <th
+      scope="col"
+      className={headerClass}
+    >
       <button
         type="button"
-        className="hover:text-foreground whitespace-nowrap"
+        className="hover:text-foreground focus-visible:ring-ring whitespace-nowrap rounded-sm focus-visible:outline-none focus-visible:ring-1"
         onClick={() => onSort(field)}
+        aria-label={`Sort by ${label}${active ? `, currently ${direction}ending` : ''}`}
       >
         {label} {active ? (direction === 'asc' ? '↑' : '↓') : '↕'}
       </button>
@@ -68,8 +72,16 @@ export function WorklistTable({
     (study.assignedRadiologistId ? 'Assigned' : 'Unassigned');
 
   return (
-    <div className="border-input/60 bg-card overflow-x-auto rounded-xl border shadow-sm">
+    <div
+      className="mswnh-scroll-region border-input/60 bg-card overflow-x-auto rounded-xl border shadow-sm"
+      role="region"
+      aria-label="Radiologist worklist table. Scroll horizontally to see all columns."
+      tabIndex={0}
+    >
       <table className="w-full min-w-[1320px] border-collapse text-xs">
+        <caption className="sr-only">
+          Radiologist worklist ordered by priority and received time
+        </caption>
         <thead className="bg-muted/40 border-input/60 border-b">
           <tr>
             <SortHeader
@@ -79,7 +91,12 @@ export function WorklistTable({
               direction={sortDirection}
               onSort={onSort}
             />
-            <th className={headerClass}>SLA / waiting</th>
+            <th
+              scope="col"
+              className={headerClass}
+            >
+              SLA / waiting
+            </th>
             <SortHeader
               label="Patient"
               field="patientName"
@@ -94,8 +111,18 @@ export function WorklistTable({
               direction={sortDirection}
               onSort={onSort}
             />
-            <th className={headerClass}>Modality</th>
-            <th className={headerClass}>Location</th>
+            <th
+              scope="col"
+              className={headerClass}
+            >
+              Modality
+            </th>
+            <th
+              scope="col"
+              className={headerClass}
+            >
+              Location
+            </th>
             <SortHeader
               label="Received"
               field="receivedAt"
@@ -103,8 +130,18 @@ export function WorklistTable({
               direction={sortDirection}
               onSort={onSort}
             />
-            <th className={headerClass}>Images</th>
-            <th className={headerClass}>Assigned to</th>
+            <th
+              scope="col"
+              className={headerClass}
+            >
+              Images
+            </th>
+            <th
+              scope="col"
+              className={headerClass}
+            >
+              Assigned to
+            </th>
             <SortHeader
               label="Status"
               field="status"
@@ -112,8 +149,18 @@ export function WorklistTable({
               direction={sortDirection}
               onSort={onSort}
             />
-            <th className={headerClass}>Notes</th>
-            <th className={headerClass}>Actions</th>
+            <th
+              scope="col"
+              className={headerClass}
+            >
+              Notes
+            </th>
+            <th
+              scope="col"
+              className={headerClass}
+            >
+              Actions
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -153,8 +200,18 @@ export function WorklistTable({
                   </div>
                 </td>
                 <td className="px-3 py-3">
-                  <div className="text-foreground font-medium">{study.patient.name}</div>
-                  <div className="text-muted-foreground mt-0.5">{study.patient.mrn}</div>
+                  <button
+                    type="button"
+                    className="focus-visible:ring-ring rounded-sm text-left focus-visible:outline-none focus-visible:ring-1"
+                    aria-label={`Open details for ${study.patient.name}, ${study.examination}`}
+                    onClick={event => {
+                      event.stopPropagation();
+                      onSelect(study);
+                    }}
+                  >
+                    <span className="text-foreground block font-medium">{study.patient.name}</span>
+                    <span className="text-muted-foreground mt-0.5 block">{study.patient.mrn}</span>
+                  </button>
                 </td>
                 <td className="max-w-[250px] px-3 py-3">
                   <div className="text-foreground font-medium">{study.examination}</div>

@@ -204,3 +204,36 @@
   --chart-4: 280 40% 48%;
   --chart-5: 340 45% 45%;
 }
+
+/* Appearance mode is intentionally independent from the selected color preset.
+ * The body selector gives the light semantic surfaces precedence while keeping
+ * each preset's recognizable blue accent where components use --highlight. */
+body.light {
+  --neutral: 215 18% 42%;
+  --neutral-light: 214 30% 72%;
+  --neutral-dark: 217 30% 22%;
+  --background: 214 40% 97%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  --primary: 214 92% 45%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 214 70% 92%;
+  --secondary-foreground: 218 54% 25%;
+  --muted: 214 32% 93%;
+  --muted-foreground: 215 20% 38%;
+  --accent: 214 75% 90%;
+  --accent-foreground: 218 54% 25%;
+  --destructive: 0 72% 48%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 214 25% 82%;
+  --input: 214 25% 76%;
+  --ring: 214 92% 45%;
+  --chart-1: 214 82% 48%;
+  --chart-2: 166 60% 36%;
+  --chart-3: 35 82% 46%;
+  --chart-4: 275 62% 50%;
+  --chart-5: 340 70% 48%;
+}

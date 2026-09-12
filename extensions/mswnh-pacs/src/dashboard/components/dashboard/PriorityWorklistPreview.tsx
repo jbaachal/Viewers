@@ -77,8 +77,14 @@ export function PriorityWorklistPreview({
         </Button>
       }
     >
-      <div className="overflow-x-auto">
+      <div
+        className="mswnh-scroll-region overflow-x-auto"
+        role="region"
+        aria-label="Priority worklist preview. Scroll horizontally to see all columns."
+        tabIndex={0}
+      >
         <table className="w-full min-w-[1180px] border-collapse text-left text-xs">
+          <caption className="sr-only">Highest-priority active PACS studies</caption>
           <thead className="bg-background/50 text-muted-foreground">
             <tr>
               {[

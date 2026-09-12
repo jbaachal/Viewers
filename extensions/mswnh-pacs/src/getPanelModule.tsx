@@ -8,15 +8,15 @@ export default function getPanelModule() {
     {
       name: 'studyNotes',
       iconName: 'clipboard',
-      iconLabel: 'Study Notes',
-      label: 'Study Notes',
+      iconLabel: 'Notes',
+      label: 'Notes',
       component: StudyNotesPanel,
     },
     {
       name: 'studyReport',
       iconName: 'tab-patient-info',
-      iconLabel: 'Study Report',
-      label: 'Study Report',
+      iconLabel: 'Report',
+      label: 'Report',
       component: StudyReportPanel,
     },
   ];

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useParams } from 'react-router';
 import { Enums, log } from '@ohif/core';
 import { Button } from '@ohif/ui-next';
@@ -40,6 +40,14 @@ export function useStudyListQuery({
   const [data, setData] = useState(DEFAULT_DATA);
   const [isLoading, setIsLoading] = useState(false);
   const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const refresh = useCallback(() => {
     setIsLoading(false);
@@ -63,6 +71,7 @@ export function useStudyListQuery({
       log.time(Enums.TimingEnum.SEARCH_TO_LIST);
       try {
         const studies = await dataSource.query.studies.search(queryFilterValues);
+        if (!isMounted.current) return;
         setData({
           studies: studies || [],
           queryFilterValues,
@@ -70,6 +79,10 @@ export function useStudyListQuery({
         log.timeEnd(Enums.TimingEnum.SCRIPT_TO_VIEW);
         log.timeEnd(Enums.TimingEnum.SEARCH_TO_LIST);
       } catch (e) {
+        // A query may settle after the user leaves the study list. Its error
+        // belongs to the route that started it and must not open a global modal
+        // over the dashboard (or any other route) after that route unmounts.
+        if (!isMounted.current) return;
         console.error(e);
         // Record that we attempted these filter values even though the fetch
         // failed. Without this, the effect's `filtersChanged` check would
@@ -107,8 +120,10 @@ export function useStudyListQuery({
           });
         }
       } finally {
-        setIsLoading(false);
-        setHasFetchedOnce(true);
+        if (isMounted.current) {
+          setIsLoading(false);
+          setHasFetchedOnce(true);
+        }
       }
     }
 

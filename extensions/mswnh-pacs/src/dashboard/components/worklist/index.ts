@@ -1,4 +1,5 @@
 export * from './StudyActions';
+export * from './ConfirmationDialog';
 export * from './StudyDetailsDrawer';
 export * from './StudyNotesDialog';
 export * from './WorklistFilters';

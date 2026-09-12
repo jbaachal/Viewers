@@ -58,6 +58,11 @@ const usAnnotation = {
   panel: '@ohif/extension-ultrasound-pleura-bline.panelModule.USAnnotationPanel',
 };
 
+const mswnh = {
+  studyNotes: '@mswnh/extension-pacs.panelModule.studyNotes',
+  studyReport: '@mswnh/extension-pacs.panelModule.studyReport',
+};
+
 let settingsSaved = {};
 const extensionDependencies = {
   // Can derive the versions at least process.env.from npm_package_version
@@ -71,6 +76,7 @@ const extensionDependencies = {
   '@ohif/extension-dicom-pdf': '^3.0.1',
   '@ohif/extension-dicom-video': '^3.0.1',
   '@ohif/extension-ultrasound-pleura-bline': '^3.0.0',
+  '@mswnh/extension-pacs': '^3.13.2',
 };
 
 function modeFactory({ modeConfiguration }) {
@@ -314,7 +320,13 @@ function modeFactory({ modeConfiguration }) {
             props: {
               leftPanels: [tracked.thumbnailList],
               leftPanelResizable: true,
-              rightPanels: [usAnnotation.panel, cornerstone.segmentation, tracked.measurements],
+              rightPanels: [
+                mswnh.studyReport,
+                mswnh.studyNotes,
+                usAnnotation.panel,
+                cornerstone.segmentation,
+                tracked.measurements,
+              ],
               rightPanelResizable: true,
               viewports: [
                 {

@@ -1,9 +1,15 @@
-import type { HealthState, SystemHealthSnapshot } from '../models';
+import type { DicomDeviceHealth, HealthState, SystemHealthSnapshot } from '../models';
 import type { SystemMonitoringService } from './SystemMonitoringService';
 
 type ApiSnapshot = Omit<SystemHealthSnapshot, 'overallState' | 'components' | 'dataSource'> & {
   overallState: string;
   dataSource: string;
+  devices?: Array<
+    Omit<DicomDeviceHealth, 'state' | 'aeTitles'> & {
+      state: string;
+      aeTitles: Array<Omit<DicomDeviceHealth['aeTitles'][number], 'state'> & { state: string }>;
+    }
+  >;
   components: Array<Omit<SystemHealthSnapshot['components'][number], 'state'> & { state: string }>;
 };
 
@@ -17,7 +23,10 @@ function mapState(value: string): HealthState {
 }
 
 export class SystemMonitoringApiError extends Error {
-  constructor(public readonly status: number, message: string) {
+  constructor(
+    public readonly status: number,
+    message: string
+  ) {
     super(message);
     this.name = 'SystemMonitoringApiError';
   }
@@ -49,6 +58,11 @@ export class ApiSystemMonitoringService implements SystemMonitoringService {
       components: snapshot.components.map(component => ({
         ...component,
         state: mapState(component.state),
+      })),
+      devices: (snapshot.devices ?? []).map(device => ({
+        ...device,
+        state: mapState(device.state),
+        aeTitles: device.aeTitles.map(ae => ({ ...ae, state: mapState(ae.state) })),
       })),
       dataSource: 'LIVE',
     };

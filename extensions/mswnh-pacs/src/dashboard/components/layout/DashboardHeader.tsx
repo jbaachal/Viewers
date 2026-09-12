@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSystem } from '@ohif/core';
 import {
   Button,
   DropdownMenu,
@@ -14,12 +15,15 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
+  useModal,
+  useActiveTheme,
   useUserAuthentication,
 } from '@ohif/ui-next';
 
 import type { DashboardAlert, HealthState } from '../../models';
 import { useDashboardContext, type DemoRole } from '../../context/DashboardProvider';
 import { useKampalaClock } from '../../hooks/useKampalaClock';
+import { ChangePasswordDialog } from '../account/ChangePasswordDialog';
 
 const roleLabels: Record<DemoRole, string> = {
   RADIOLOGIST: 'Radiologist',
@@ -77,6 +81,10 @@ export function DashboardHeader({
   onToggleSidebar: () => void;
 }) {
   const navigate = useNavigate();
+  const { servicesManager } = useSystem();
+  const { customizationService } = servicesManager.services as any;
+  const { show } = useModal();
+  const { appearanceMode, setAppearanceMode } = useActiveTheme();
   // Runtime value is [state, api]; the legacy source declaration infers only state.
   const [{ user }] = useUserAuthentication() as any;
   const { services, demoRole } = useDashboardContext();
@@ -84,18 +92,34 @@ export function DashboardHeader({
   const [search, setSearch] = useState('');
   const [alerts, setAlerts] = useState<DashboardAlert[]>([]);
   const [healthState, setHealthState] = useState<HealthState | 'UNKNOWN'>('UNKNOWN');
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [passwordBusy, setPasswordBusy] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const refreshHeaderState = useCallback(async () => {
     if (!services) return;
-    const [nextAlerts, health] = await Promise.all([
-      services.dataSource === 'LIVE'
-        ? services.worklist.getAlerts()
-        : services.dashboard.getSnapshot().then(snapshot => snapshot.alerts),
-      services.systemMonitoring.getSnapshot(),
-    ]);
-    setAlerts(nextAlerts);
-    setHealthState(health.overallState);
-  }, [services]);
+    try {
+      const nextAlerts =
+        services.dataSource === 'LIVE'
+          ? await services.worklist.getAlerts()
+          : await services.dashboard.getSnapshot().then(snapshot => snapshot.alerts);
+      setAlerts(nextAlerts);
+    } catch {
+      setAlerts([]);
+    }
+
+    if (demoRole !== 'PACS_ADMIN') {
+      setHealthState('UNKNOWN');
+      return;
+    }
+
+    try {
+      const health = await services.systemMonitoring.getSnapshot();
+      setHealthState(health.overallState);
+    } catch {
+      setHealthState('UNKNOWN');
+    }
+  }, [demoRole, services]);
 
   useEffect(() => {
     void refreshHeaderState();
@@ -116,6 +140,32 @@ export function DashboardHeader({
   const unreadAlerts = useMemo(() => alerts.filter(alert => !alert.acknowledged), [alerts]);
   const userName = getUserName(user);
 
+  const changePassword = async (oldPassword: string, newPassword: string) => {
+    if (!services) return;
+    setPasswordBusy(true);
+    setPasswordError(null);
+    try {
+      await services.account.changePassword(oldPassword, newPassword);
+      setPasswordDialogOpen(false);
+      navigate('/logout?redirect_uri=' + encodeURIComponent(window.location.origin));
+    } catch (reason) {
+      setPasswordError(
+        reason instanceof Error ? reason.message : 'The password could not be changed.'
+      );
+    } finally {
+      setPasswordBusy(false);
+    }
+  };
+
+  const showAbout = () => {
+    const AboutModal = customizationService.getCustomization('ohif.aboutModal');
+    show({
+      content: AboutModal,
+      title: AboutModal?.title ?? 'About PACS',
+      containerClassName: AboutModal?.containerClassName ?? 'max-w-md',
+    });
+  };
+
   const submitSearch = (event: React.FormEvent) => {
     event.preventDefault();
     const query = search.trim();
@@ -125,7 +175,9 @@ export function DashboardHeader({
   const acknowledgeAlert = async (alertId: string) => {
     if (services?.dataSource === 'LIVE') {
       const alert = alerts.find(item => item.id === alertId);
-      navigate(alert?.studyId ? `/worklist?study=${encodeURIComponent(alert.studyId)}` : '/worklist');
+      navigate(
+        alert?.studyId ? `/worklist?study=${encodeURIComponent(alert.studyId)}` : '/worklist'
+      );
       return;
     }
     await services?.dashboard.acknowledgeAlert(alertId);
@@ -133,7 +185,7 @@ export function DashboardHeader({
 
   return (
     <TooltipProvider delayDuration={250}>
-      <header className="border-input/50 bg-card min-h-16 relative z-40 flex shrink-0 items-center gap-3 border-b px-3 shadow-sm md:px-4">
+      <header className="border-input/50 bg-card min-h-16 relative z-40 flex shrink-0 flex-wrap items-center gap-2 border-b px-2 py-2 shadow-sm sm:gap-3 sm:px-3 md:px-4 lg:flex-nowrap">
         <Button
           type="button"
           variant="ghost"
@@ -174,20 +226,19 @@ export function DashboardHeader({
           <img
             src="/hospital-logo.svg"
             alt="Mulago Specialised Women and Neonatal Hospital"
-            className="h-10 w-auto object-contain"
+            className="h-9 w-auto object-contain sm:h-10"
           />
           <span className="hidden text-left md:block">
             <span className="text-foreground block text-base font-semibold leading-tight">
-              MSWNH Radiology PACS
+              MSWNH PACS
             </span>
-            <span className="text-muted-foreground block text-xs">Operational dashboard</span>
           </span>
         </button>
 
         <form
           role="search"
           onSubmit={submitSearch}
-          className="relative mx-auto min-w-0 max-w-xl flex-1"
+          className="relative order-last mx-auto w-full basis-full lg:order-none lg:min-w-[22rem] lg:max-w-2xl lg:flex-1 lg:basis-auto"
         >
           <label
             htmlFor="pacs-global-search"
@@ -202,7 +253,7 @@ export function DashboardHeader({
             value={search}
             onChange={event => setSearch(event.target.value)}
             placeholder="Patient, MRN, accession or Study UID"
-            className="h-9 pl-8 pr-16"
+            className="h-9 w-full pl-8 pr-16"
           />
           <button
             type="submit"
@@ -212,21 +263,25 @@ export function DashboardHeader({
           </button>
         </form>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div
-              className="hidden rounded-md px-2 py-1.5 sm:flex"
-              aria-label={`System health: ${healthState.toLowerCase()}`}
-            >
-              <HealthIndicator state={healthState} />
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            {services?.dataSource === 'LIVE'
-              ? 'Live configured system checks'
-              : 'Prototype technical-monitoring status'}
-          </TooltipContent>
-        </Tooltip>
+        {demoRole === 'PACS_ADMIN' && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="focus-visible:ring-ring hidden rounded-md px-2 py-1.5 focus-visible:outline-none focus-visible:ring-1 sm:flex"
+                aria-label={`System health: ${healthState.toLowerCase()}`}
+                onClick={() => navigate('/dashboard/system')}
+              >
+                <HealthIndicator state={healthState} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {services?.dataSource === 'LIVE'
+                ? 'Live configured system checks'
+                : 'Prototype technical-monitoring status'}
+            </TooltipContent>
+          </Tooltip>
+        )}
 
         <div className="text-muted-foreground hidden shrink-0 text-right 2xl:block">
           <div className="text-foreground text-sm font-medium tabular-nums">{time}</div>
@@ -262,7 +317,9 @@ export function DashboardHeader({
             className="w-80"
           >
             <DropdownMenuLabel>
-              {services?.dataSource === 'LIVE' ? 'Live SLA notifications' : 'Prototype notifications'}
+              {services?.dataSource === 'LIVE'
+                ? 'Live SLA notifications'
+                : 'Prototype notifications'}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             {alerts.length === 0 && (
@@ -323,6 +380,36 @@ export function DashboardHeader({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem
+              onSelect={() => {
+                setPasswordError(null);
+                setPasswordDialogOpen(true);
+              }}
+            >
+              <Icons.Lock className="mr-2 h-4 w-4" /> Change Password
+            </DropdownMenuItem>
+            <DropdownMenuLabel className="text-muted-foreground pt-2 text-xs font-medium uppercase tracking-wide">
+              Appearance
+            </DropdownMenuLabel>
+            {(['light', 'dark', 'system'] as const).map(mode => (
+              <DropdownMenuItem
+                key={mode}
+                onSelect={() => setAppearanceMode(mode)}
+                aria-current={appearanceMode === mode ? 'true' : undefined}
+              >
+                <span
+                  className="mr-2 w-4 text-center"
+                  aria-hidden="true"
+                >
+                  {appearanceMode === mode ? '✓' : ''}
+                </span>
+                {mode === 'light' ? 'Light' : mode === 'dark' ? 'Dark' : 'Use system setting'}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuItem onSelect={showAbout}>
+              <Icons.Info className="mr-2 h-4 w-4" /> About
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
               onSelect={() =>
                 navigate('/logout?redirect_uri=' + encodeURIComponent(window.location.href))
               }
@@ -332,6 +419,18 @@ export function DashboardHeader({
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
+      <ChangePasswordDialog
+        open={passwordDialogOpen}
+        busy={passwordBusy}
+        error={passwordError}
+        onChangePassword={changePassword}
+        onClose={() => {
+          if (!passwordBusy) {
+            setPasswordDialogOpen(false);
+            setPasswordError(null);
+          }
+        }}
+      />
     </TooltipProvider>
   );
 }

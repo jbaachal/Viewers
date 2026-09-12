@@ -197,6 +197,7 @@ declare global {
       activateViewportBeforeInteraction?: boolean;
       autoPlayCine?: boolean;
       showStudyList?: boolean;
+      defaultLoginRedirectPath?: string;
       whiteLabeling?: Record<string, unknown>;
       httpErrorHandler?: (error: Error) => void;
       dangerouslyUseDynamicConfig?: {

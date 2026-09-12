@@ -18,10 +18,6 @@ export function DashboardSidebar() {
           <NavigationItems role={demoRole} />
         </TooltipProvider>
       </div>
-      <div className="border-input/50 border-t p-4">
-        <div className="text-muted-foreground text-xs">Workflow source</div>
-        <div className="text-foreground mt-1 text-sm font-medium">Live PACS worklist</div>
-      </div>
     </aside>
   );
 }

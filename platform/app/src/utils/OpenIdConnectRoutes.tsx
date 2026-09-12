@@ -1,11 +1,12 @@
 import React from 'react';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Route, Routes, useLocation, useNavigate } from 'react-router';
 import CallbackPage from '../routes/CallbackPage';
 import SignoutCallbackComponent from '../routes/SignoutCallbackComponent';
 import LegacyClient from './legacyOIDCClient';
 import NextClient from './nextOIDCClient';
 import { sanitizeSameOriginRedirect } from './sanitizeRedirect';
+import { resolveLoginRedirect } from './resolveLoginRedirect';
 
 function _isAbsoluteUrl(url) {
   return url.includes('http://') || url.includes('https://');
@@ -119,8 +120,16 @@ function LoginComponent(userManager) {
   return null;
 }
 
-function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService, children }) {
+function OpenIdConnectRoutes({
+  oidc,
+  routerBasename,
+  userAuthenticationService,
+  defaultLoginRedirectPath,
+  children,
+}) {
   const userManager = useMemo(() => initUserManager(oidc, routerBasename), [oidc, routerBasename]);
+  const [isAuthenticationRestored, setIsAuthenticationRestored] = useState(false);
+  const authenticationRedirectInProgress = useRef(false);
 
   const getAuthorizationHeader = () => {
     const user = userAuthenticationService.getUser();
@@ -137,9 +146,17 @@ function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService, 
   };
 
   const handleUnauthenticated = () => {
+    if (authenticationRedirectInProgress.current) {
+      return null;
+    }
+    authenticationRedirectInProgress.current = true;
+
     // Note: Don't await the redirect. If you make this component async it
     // causes a react error before redirect as it returns a promise of a component rather than a component.
-    userManager.signinRedirect();
+    userManager.signinRedirect().catch(error => {
+      authenticationRedirectInProgress.current = false;
+      console.error('Unable to redirect to sign in', error);
+    });
 
     // return null because this is used in a react component
     return null;
@@ -165,20 +182,53 @@ function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService, 
   }, []);
 
   useEffect(() => {
+    let isActive = true;
+
     userAuthenticationService.setServiceImplementation({
       getAuthorizationHeader,
       handleUnauthenticated,
     });
 
-    userAuthenticationService.set({ enabled: true });
-    userManager
-      .getUser()
-      .then(user => {
-        if (user) {
-          userAuthenticationService.setUser(user);
+    const restoreAuthentication = async () => {
+      try {
+        let user = await userManager.getUser();
+
+        // The study list can remain open beyond the access-token lifetime. A
+        // full navigation back to the dashboard must renew that stored user
+        // before protected Workflow API requests are allowed to render.
+        if (user?.expired) {
+          try {
+            user = await userManager.signinSilent();
+          } catch (error) {
+            console.warn('Unable to renew the stored authenticated session', error);
+            await userManager.removeUser();
+            user = null;
+          }
         }
-      })
-      .catch(error => console.error('Unable to restore the authenticated user', error));
+
+        if (isActive) {
+          userAuthenticationService.setUser(user || null);
+        }
+      } catch (error) {
+        console.error('Unable to restore the authenticated user', error);
+        if (isActive) {
+          userAuthenticationService.setUser(null);
+        }
+      } finally {
+        if (isActive) {
+          // Private routes remain gated until token restoration/renewal has
+          // completed, preventing their initial API calls from racing auth.
+          userAuthenticationService.set({ enabled: true });
+          setIsAuthenticationRestored(true);
+        }
+      }
+    };
+
+    void restoreAuthentication();
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -228,7 +278,10 @@ function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService, 
   // const pathnameRelative = pathname.replace(routerBasename,'');
 
   if (pathname !== redirect_uri) {
-    sessionStorage.setItem('ohif-redirect-to', JSON.stringify({ pathname, search }));
+    sessionStorage.setItem(
+      'ohif-redirect-to',
+      JSON.stringify(resolveLoginRedirect(pathname, search, defaultLoginRedirectPath))
+    );
   }
 
   return (
@@ -291,7 +344,7 @@ function OpenIdConnectRoutes({ oidc, routerBasename, userAuthenticationService, 
           }
         />
       </Routes>
-      {!isAuthenticationRoute && children}
+      {!isAuthenticationRoute && isAuthenticationRestored && children}
     </>
   );
 }

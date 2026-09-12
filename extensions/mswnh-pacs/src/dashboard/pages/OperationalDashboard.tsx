@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Button, Icons } from '@ohif/ui-next';
+import { Button } from '@ohif/ui-next';
 import { useNavigate } from 'react-router-dom';
 
 import {
   AlertsPanel,
+  DashboardLoadingSkeleton,
   DashboardMetricCard,
   ModalityActivityGrid,
   PriorityWorklistPreview,
@@ -27,14 +28,14 @@ function metricDestination(metric: DashboardMetric): string {
     pendingVerification: '/worklist?status=reported',
     averageTurnaroundTime: '/dashboard/management',
     delayedExams: '/worklist?overdue=true',
-    systemHealth: '/dashboard/system',
+    systemHealth: '/dashboard',
   };
   return destinations[metric.id];
 }
 
 export function OperationalDashboard() {
   const navigate = useNavigate();
-  const { services } = useDashboardContext();
+  const { services, demoRole } = useDashboardContext();
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
   const [displayedStudies, setDisplayedStudies] = useState<Study[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<StudyStatus | null>(null);
@@ -111,7 +112,10 @@ export function OperationalDashboard() {
   if (loadError) {
     return (
       <div className="flex min-h-full items-center justify-center p-6">
-        <div className="border-destructive/50 bg-destructive/10 max-w-lg rounded-xl border p-6 text-center">
+        <div
+          role="alert"
+          className="border-destructive/50 bg-destructive/10 max-w-lg rounded-xl border p-6 text-center"
+        >
           <h1 className="text-foreground text-lg font-semibold">
             Operational dashboard unavailable
           </h1>
@@ -129,20 +133,13 @@ export function OperationalDashboard() {
   }
 
   if (!snapshot) {
-    return (
-      <div className="text-muted-foreground flex min-h-full items-center justify-center gap-2 text-sm">
-        <Icons.LoadingSpinner className="h-5 w-5 animate-spin" /> Loading operational dashboard…
-      </div>
-    );
+    return <DashboardLoadingSkeleton label="Loading operational dashboard" />;
   }
 
   return (
-    <div className="mx-auto max-w-[1800px] space-y-5 p-4 md:p-6">
+    <div className="mx-auto max-w-[1800px] space-y-5 p-3 sm:p-4 md:p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <div className="text-primary mb-1 text-xs font-semibold uppercase tracking-[0.16em]">
-            MSWNH PACS
-          </div>
           <h1 className="text-foreground text-2xl font-semibold">Operational Dashboard</h1>
           <p className="text-muted-foreground mt-1 text-xs">
             Live operational snapshot · Updated{' '}
@@ -162,13 +159,15 @@ export function OperationalDashboard() {
               {notice}
             </span>
           )}
-          <span className="border-primary/30 bg-primary/10 text-primary rounded-full border px-3 py-1.5 text-xs font-medium">
-            {snapshot.dataSource === 'LIVE' ? 'Live workflow data' : 'Demonstration data'}
-          </span>
+          {snapshot.dataSource !== 'LIVE' && (
+            <span className="border-primary/30 bg-primary/10 text-primary rounded-full border px-3 py-1.5 text-xs font-medium">
+              Demonstration data
+            </span>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 2xl:grid-cols-8">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4 2xl:grid-cols-8">
         {snapshot.metrics.map(metric => (
           <DashboardMetricCard
             key={metric.id}
@@ -219,7 +218,7 @@ export function OperationalDashboard() {
         />
       </div>
 
-      <RecentActivity activity={snapshot.recentActivity} />
+      {demoRole === 'PACS_ADMIN' && <RecentActivity activity={snapshot.recentActivity} />}
     </div>
   );
 }

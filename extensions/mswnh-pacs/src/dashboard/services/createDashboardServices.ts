@@ -11,12 +11,28 @@ import { MockManagementReportService } from './MockManagementReportService';
 import type { SystemMonitoringService } from './SystemMonitoringService';
 import { ApiSystemMonitoringService } from './ApiSystemMonitoringService';
 import { MockSystemMonitoringService } from './MockSystemMonitoringService';
+import type { UserAdministrationService } from './UserAdministrationService';
+import { ApiUserAdministrationService } from './ApiUserAdministrationService';
+import { MockUserAdministrationService } from './MockUserAdministrationService';
+import type { SlaAdministrationService } from './SlaAdministrationService';
+import { ApiSlaAdministrationService } from './ApiSlaAdministrationService';
+import { MockSlaAdministrationService } from './MockSlaAdministrationService';
+import type { AccountService } from './AccountService';
+import { ApiAccountService } from './ApiAccountService';
+import { MockAccountService } from './MockAccountService';
+import type { AuditLogService } from './AuditLogService';
+import { ApiAuditLogService } from './ApiAuditLogService';
+import { MockAuditLogService } from './MockAuditLogService';
 
 export type DashboardServices = {
   dashboard: DashboardService;
   worklist: WorklistService;
   management: ManagementReportService;
   systemMonitoring: SystemMonitoringService;
+  userAdministration: UserAdministrationService;
+  slaAdministration: SlaAdministrationService;
+  account: AccountService;
+  auditLog: AuditLogService;
   dataSource: 'MOCK' | 'LIVE';
 };
 
@@ -63,6 +79,26 @@ export function createDashboardServices(options?: {
         options.getAuthorizationHeaders,
         options.handleUnauthenticated
       ),
+      userAdministration: new ApiUserAdministrationService(
+        baseUrl,
+        options.getAuthorizationHeaders,
+        options.handleUnauthenticated
+      ),
+      slaAdministration: new ApiSlaAdministrationService(
+        baseUrl,
+        options.getAuthorizationHeaders,
+        options.handleUnauthenticated
+      ),
+      account: new ApiAccountService(
+        baseUrl,
+        options.getAuthorizationHeaders,
+        options.handleUnauthenticated
+      ),
+      auditLog: new ApiAuditLogService(
+        baseUrl,
+        options.getAuthorizationHeaders,
+        options.handleUnauthenticated
+      ),
       dataSource: 'LIVE',
     };
   }
@@ -71,6 +107,10 @@ export function createDashboardServices(options?: {
     worklist: new MockWorklistService(store),
     management: new MockManagementReportService(store),
     systemMonitoring: new MockSystemMonitoringService(store),
+    userAdministration: new MockUserAdministrationService(),
+    slaAdministration: new MockSlaAdministrationService(),
+    account: new MockAccountService(),
+    auditLog: new MockAuditLogService(),
     dataSource: 'MOCK',
   };
 }

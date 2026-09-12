@@ -11,10 +11,18 @@ import {
   themePresets,
 } from '@ohif/ui-next';
 import { useTranslation } from 'react-i18next';
+import type { AppearanceMode } from '@ohif/ui-next';
 
 function AppearanceModalDefault() {
-  const { activeTheme, setActiveTheme, customCss, applyCustomTheme, clearCustomTheme } =
-    useActiveTheme();
+  const {
+    activeTheme,
+    setActiveTheme,
+    customCss,
+    applyCustomTheme,
+    clearCustomTheme,
+    appearanceMode,
+    setAppearanceMode,
+  } = useActiveTheme();
   const { t } = useTranslation('AppearanceModal');
 
   const [draftCss, setDraftCss] = React.useState(() => customCss);
@@ -59,6 +67,26 @@ function AppearanceModalDefault() {
     <AppearanceModal>
       <AppearanceModal.Body>
         <div className="grid grid-cols-[auto_1fr] items-center gap-x-6 gap-y-4">
+          <AppearanceModal.SectionLabel>{t('Appearance')}</AppearanceModal.SectionLabel>
+          <div>
+            <Select
+              value={appearanceMode}
+              onValueChange={value => setAppearanceMode(value as AppearanceMode)}
+            >
+              <SelectTrigger
+                className="w-[200px]"
+                aria-label={t('Appearance')}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="light">{t('Light')}</SelectItem>
+                <SelectItem value="dark">{t('Dark')}</SelectItem>
+                <SelectItem value="system">{t('Use system setting')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <AppearanceModal.SectionLabel>{t('Theme')}</AppearanceModal.SectionLabel>
           <div>
             <Select

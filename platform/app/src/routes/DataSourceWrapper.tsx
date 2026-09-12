@@ -100,12 +100,26 @@ function DataSourceWrapper(props: withAppTypes) {
    * might change and data sources initialize based on the URL.
    */
   useEffect(() => {
+    let cancelled = false;
+
     const initializeDataSource = async () => {
-      await dataSource.initialize({ params, query });
-      setIsDataSourceInitialized(true);
+      try {
+        await dataSource.initialize({ params, query });
+        if (!cancelled) {
+          setIsDataSourceInitialized(true);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to initialize the study-list data source.', error);
+        }
+      }
     };
 
-    initializeDataSource();
+    void initializeDataSource();
+
+    return () => {
+      cancelled = true;
+    };
   }, [dataSource]);
 
   useEffect(() => {

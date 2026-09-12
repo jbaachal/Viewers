@@ -3,6 +3,7 @@ import { Button, Icons } from '@ohif/ui-next';
 import { useNavigate } from 'react-router-dom';
 
 import {
+  ConfirmationDialog,
   StudyDetailsDrawer,
   StudyNotesDialog,
   WorklistFilters,
@@ -12,6 +13,7 @@ import {
   type StudyActionHandlers,
 } from '../components/worklist';
 import { useDashboardContext } from '../context/DashboardProvider';
+import { useDialogAccessibility } from '../hooks/useDialogAccessibility';
 import { useWorklist } from '../hooks/useWorklist';
 import { mockRadiologists } from '../mock';
 import type { Study, StudyNote, StudyPriority, StudySortField } from '../models';
@@ -29,6 +31,15 @@ export function RadiologistWorklist() {
   const [priorityReason, setPriorityReason] = useState('');
   const [busyStudyId, setBusyStudyId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<{
+    title: string;
+    description: string;
+    confirmLabel: string;
+    action: () => void;
+  } | null>(null);
+  const priorityDialog = useDialogAccessibility<HTMLFormElement>(Boolean(priorityStudy), () =>
+    setPriorityStudy(null)
+  );
 
   const loadSelectedStudy = useCallback(async () => {
     if (!services || !worklist.selectedStudyId) {
@@ -136,17 +147,29 @@ export function RadiologistWorklist() {
         ),
       onStartReporting: study => openStudyInViewer(study, true),
       onMarkReported: study =>
-        void runAction(
-          study,
-          () => services!.worklist.markReported(study.id),
-          'Study marked Reported.'
-        ),
+        setConfirmation({
+          title: 'Mark report as completed?',
+          description: `This will move ${study.patient.name}'s examination to Reported.`,
+          confirmLabel: 'Mark Reported',
+          action: () =>
+            void runAction(
+              study,
+              () => services!.worklist.markReported(study.id),
+              'Study marked Reported.'
+            ),
+        }),
       onMarkVerified: study =>
-        void runAction(
-          study,
-          () => services!.worklist.markVerified(study.id),
-          'Report marked Verified.'
-        ),
+        setConfirmation({
+          title: 'Verify this report?',
+          description: `This will mark ${study.patient.name}'s report as verified.`,
+          confirmLabel: 'Mark Verified',
+          action: () =>
+            void runAction(
+              study,
+              () => services!.worklist.markVerified(study.id),
+              'Report marked Verified.'
+            ),
+        }),
       onChangePriority: study => {
         setPriorityStudy(study);
         setNextPriority(study.priority);
@@ -192,12 +215,9 @@ export function RadiologistWorklist() {
     return <div className="text-foreground p-6">The worklist service is unavailable.</div>;
 
   return (
-    <div className="mx-auto max-w-[1900px] space-y-4 p-4 md:p-6">
+    <div className="mx-auto max-w-[1900px] space-y-4 p-3 sm:p-4 md:p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <div className="text-primary mb-1 text-xs font-semibold uppercase tracking-[0.16em]">
-            MSWNH PACS
-          </div>
           <h1 className="text-foreground text-2xl font-semibold">Radiologist Worklist</h1>
           <p className="text-muted-foreground mt-1 text-sm">
             Prioritised reporting queue · Africa/Kampala time
@@ -212,9 +232,6 @@ export function RadiologistWorklist() {
               {notice}
             </span>
           )}
-          <span className="border-primary/30 bg-primary/10 text-primary rounded-full border px-3 py-1.5 text-xs">
-            Live workflow data
-          </span>
         </div>
       </div>
 
@@ -229,7 +246,10 @@ export function RadiologistWorklist() {
       />
 
       {worklist.error ? (
-        <div className="border-destructive/50 bg-destructive/10 rounded-xl border p-6 text-center">
+        <div
+          role="alert"
+          className="border-destructive/50 bg-destructive/10 rounded-xl border p-6 text-center"
+        >
           <p className="text-foreground">{worklist.error.message}</p>
           <Button
             type="button"
@@ -242,8 +262,14 @@ export function RadiologistWorklist() {
       ) : (
         <div className="relative">
           {worklist.loading && (
-            <div className="bg-background/60 absolute inset-0 z-10 grid place-items-center rounded-xl">
+            <div
+              role="status"
+              aria-live="polite"
+              aria-label="Updating worklist"
+              className="bg-background/60 absolute inset-0 z-10 grid place-items-center rounded-xl"
+            >
               <Icons.LoadingSpinner className="text-primary h-6 w-6 animate-spin" />
+              <span className="sr-only">Updating worklist</span>
             </div>
           )}
           <WorklistTable
@@ -292,12 +318,32 @@ export function RadiologistWorklist() {
         }}
       />
 
+      <ConfirmationDialog
+        open={Boolean(confirmation)}
+        title={confirmation?.title ?? ''}
+        description={confirmation?.description ?? ''}
+        confirmLabel={confirmation?.confirmLabel ?? 'Confirm'}
+        onClose={() => setConfirmation(null)}
+        onConfirm={() => {
+          const action = confirmation?.action;
+          setConfirmation(null);
+          action?.();
+        }}
+      />
+
       {priorityStudy && (
         <div
           className="bg-black/65 fixed inset-0 z-[120] grid place-items-center p-4"
+          role="presentation"
           onMouseDown={() => setPriorityStudy(null)}
         >
           <form
+            ref={priorityDialog.dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="change-priority-title"
+            tabIndex={-1}
+            onKeyDown={priorityDialog.onKeyDown}
             className="bg-background border-input w-full max-w-md space-y-4 rounded-xl border p-5 shadow-2xl"
             onMouseDown={event => event.stopPropagation()}
             onSubmit={event => {
@@ -313,7 +359,12 @@ export function RadiologistWorklist() {
             }}
           >
             <div>
-              <h2 className="text-foreground text-lg font-semibold">Change priority</h2>
+              <h2
+                id="change-priority-title"
+                className="text-foreground text-lg font-semibold"
+              >
+                Change priority
+              </h2>
               <p className="text-muted-foreground mt-1 text-sm">
                 {priorityStudy.patient.name} · {priorityStudy.examination}
               </p>

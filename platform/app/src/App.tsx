@@ -27,6 +27,8 @@ import {
   ModalProvider,
   ViewportDialogProvider,
   UserAuthenticationProvider,
+  ActiveThemeProvider,
+  initializeAppearance,
 } from '@ohif/ui-next';
 // Viewer Project
 // TODO: Should this influence study list?
@@ -41,6 +43,8 @@ let commandsManager: CommandsManager,
   servicesManager: AppTypes.ServicesManager,
   serviceProvidersManager: ServiceProvidersManager,
   hotkeysManager: HotkeysManager;
+
+initializeAppearance();
 
 const routerFutureFlags: BrowserRouterProps['future'] = {
   v7_startTransition: true,
@@ -90,7 +94,8 @@ function App({
 
   // Set appConfig
   const appConfigState = init.appConfig;
-  const { routerBasename, modes, dataSources, oidc, showStudyList } = appConfigState;
+  const { routerBasename, modes, dataSources, oidc, showStudyList, defaultLoginRedirectPath } =
+    appConfigState;
 
   // get the maximum 3D texture size
   const canvas = document.createElement('canvas');
@@ -116,6 +121,7 @@ function App({
     [UserAuthenticationProvider, { service: userAuthenticationService }],
     [I18nextProvider, { i18n }],
     [ThemeWrapperNext],
+    [ActiveThemeProvider],
     [SystemContextProvider, { commandsManager, extensionManager, hotkeysManager, servicesManager }],
     [ViewportRefsProvider],
     [ViewportGridProvider, { service: viewportGridService }],
@@ -165,6 +171,7 @@ function App({
         oidc={oidc}
         routerBasename={routerBasename}
         userAuthenticationService={userAuthenticationService}
+        defaultLoginRedirectPath={defaultLoginRedirectPath}
       >
         {appRoutes}
       </OpenIdConnectRoutes>

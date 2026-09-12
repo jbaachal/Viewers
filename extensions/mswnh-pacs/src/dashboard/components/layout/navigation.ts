@@ -6,6 +6,7 @@ export type NavigationItem = {
   roles?: Array<'RADIOLOGIST' | 'MANAGEMENT' | 'PACS_ADMIN' | 'READ_ONLY'>;
   disabled?: boolean;
   end?: boolean;
+  children?: NavigationItem[];
 };
 
 export const navigationItems: NavigationItem[] = [
@@ -28,18 +29,39 @@ export const navigationItems: NavigationItem[] = [
     roles: ['MANAGEMENT', 'PACS_ADMIN'],
   },
   {
-    id: 'system',
-    label: 'System Monitoring',
-    to: '/dashboard/system',
-    icon: 'CloudSettings',
-    roles: ['PACS_ADMIN'],
-  },
-  { id: 'audit', label: 'Audit Log', icon: 'ListView', disabled: true, roles: ['PACS_ADMIN'] },
-  {
     id: 'administration',
     label: 'Administration',
     icon: 'Settings',
-    disabled: true,
     roles: ['PACS_ADMIN'],
+    children: [
+      {
+        id: 'user-management',
+        label: 'User Management',
+        to: '/dashboard/administration',
+        icon: 'MultiplePatients',
+        roles: ['PACS_ADMIN'],
+      },
+      {
+        id: 'system',
+        label: 'System Monitoring',
+        to: '/dashboard/system',
+        icon: 'CloudSettings',
+        roles: ['PACS_ADMIN'],
+      },
+      {
+        id: 'sla-administration',
+        label: 'SLA Configuration',
+        to: '/dashboard/administration/sla',
+        icon: 'SortingAscending',
+        roles: ['PACS_ADMIN'],
+      },
+      {
+        id: 'audit',
+        label: 'Audit Log',
+        to: '/dashboard/audit',
+        icon: 'ListView',
+        roles: ['PACS_ADMIN'],
+      },
+    ],
   },
 ];

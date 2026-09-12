@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Button, Icons } from '@ohif/ui-next';
 
 import type { Study, StudyNote } from '../../models';
+import { useDialogAccessibility } from '../../hooks/useDialogAccessibility';
 import { formatKampalaDateTime } from '../../utils/formatDashboardDate';
 
 export function StudyNotesDialog({
@@ -22,6 +23,7 @@ export function StudyNotesDialog({
   const [type, setType] = useState<StudyNote['type']>('GENERAL');
   const [text, setText] = useState('');
   const [popupOnOpen, setPopupOnOpen] = useState(false);
+  const { dialogRef, onKeyDown } = useDialogAccessibility<HTMLElement>(Boolean(study), onClose);
   useEffect(() => {
     setText('');
     setPopupOnOpen(false);
@@ -42,9 +44,12 @@ export function StudyNotesDialog({
       onMouseDown={onClose}
     >
       <section
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={`Study notes for ${study.patient.name}`}
+        tabIndex={-1}
+        onKeyDown={onKeyDown}
         className="bg-background border-input max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-xl border shadow-2xl"
         onMouseDown={event => event.stopPropagation()}
       >
@@ -101,6 +106,7 @@ export function StudyNotesDialog({
         >
           <div className="grid gap-3 sm:grid-cols-[160px_1fr]">
             <select
+              aria-label="Note type"
               value={type}
               onChange={event => setType(event.target.value as StudyNote['type'])}
               className="border-input bg-background text-foreground h-9 rounded-md border px-2 text-sm"
@@ -112,6 +118,7 @@ export function StudyNotesDialog({
               <option value="URGENT">Urgent</option>
             </select>
             <textarea
+              aria-label="Study note"
               value={text}
               onChange={event => setText(event.target.value)}
               placeholder="Add a study note"

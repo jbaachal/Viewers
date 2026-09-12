@@ -3,6 +3,7 @@ import { Button, Icons } from '@ohif/ui-next';
 
 import type { DemoRole } from '../../context/DashboardProvider';
 import type { Radiologist, Study } from '../../models';
+import { useDialogAccessibility } from '../../hooks/useDialogAccessibility';
 import { formatKampalaDateTime, formatRemaining } from '../../utils/formatDashboardDate';
 import { StudyActions, type StudyActionHandlers } from './StudyActions';
 import { PriorityBadge, StatusBadge } from './WorklistStatusBadge';
@@ -31,6 +32,7 @@ export function StudyDetailsDrawer({
   handlers: StudyActionHandlers;
   onClose: () => void;
 }) {
+  const { dialogRef, onKeyDown } = useDialogAccessibility<HTMLElement>(Boolean(study), onClose);
   if (!study) return null;
   const assignee =
     study.assignedRadiologistName ||
@@ -43,9 +45,12 @@ export function StudyDetailsDrawer({
       onMouseDown={onClose}
     >
       <aside
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={`Study details for ${study.patient.name}`}
+        tabIndex={-1}
+        onKeyDown={onKeyDown}
         className="bg-background border-input h-full w-[min(94vw,590px)] overflow-y-auto border-l shadow-2xl"
         onMouseDown={event => event.stopPropagation()}
       >
@@ -99,7 +104,7 @@ export function StudyDetailsDrawer({
 
           <section className="border-input/60 rounded-lg border p-4">
             <h3 className="text-foreground mb-4 font-semibold">Study</h3>
-            <dl className="grid grid-cols-2 gap-4">
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Detail label="Examination">{study.examination}</Detail>
               <Detail label="Modality">{study.modality}</Detail>
               <Detail label="Location">{study.location}</Detail>

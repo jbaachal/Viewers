@@ -47,14 +47,15 @@ export function DashboardMetricCard({
   onSelect,
 }: {
   metric: DashboardMetric;
-  onSelect: (metric: DashboardMetric) => void;
+  onSelect?: (metric: DashboardMetric) => void;
 }) {
   const tone = toneStyles[metric.tone];
   return (
     <button
       type="button"
-      onClick={() => onSelect(metric)}
-      className={`border-input/60 bg-card hover:bg-muted/30 focus-visible:ring-ring min-h-32 group rounded-xl border border-l-4 p-4 text-left shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 ${tone.accent}`}
+      disabled={!onSelect}
+      onClick={() => onSelect?.(metric)}
+      className={`border-input/60 bg-card focus-visible:ring-ring min-h-32 group rounded-xl border border-l-4 p-4 text-left shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 ${onSelect ? 'hover:bg-muted/30' : 'cursor-default'} ${tone.accent}`}
     >
       <span className="flex items-start justify-between gap-3">
         <span className="text-muted-foreground text-xs font-medium leading-4">{metric.label}</span>

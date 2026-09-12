@@ -77,7 +77,6 @@ function calculateWorkflowStages(studies: Study[]): WorkflowStageCount[] {
     'ASSIGNED',
     'IN_REVIEW',
     'REPORTED',
-    'VERIFIED',
     'CANCELLED',
     'INCOMPLETE',
   ];
@@ -88,7 +87,7 @@ function calculateWorkflowStages(studies: Study[]): WorkflowStageCount[] {
   }));
 }
 
-function calculateMetrics(studies: Study[], now: Date, systemState: string): DashboardMetric[] {
+function calculateMetrics(studies: Study[], now: Date): DashboardMetric[] {
   const completedStudies = studies.filter(study => study.reportedAt);
   const averageTurnaround = completedStudies.length
     ? Math.round(
@@ -166,13 +165,6 @@ function calculateMetrics(studies: Study[], now: Date, systemState: string): Das
       comparison: delayed ? 'Requires attention' : 'No breached targets',
       tone: delayed ? 'critical' : 'healthy',
     },
-    {
-      id: 'systemHealth',
-      label: 'System Health',
-      value: systemState === 'HEALTHY' ? 'Healthy' : 'Warning',
-      comparison: '1 modality offline',
-      tone: systemState === 'HEALTHY' ? 'healthy' : 'warning',
-    },
   ];
 }
 
@@ -200,7 +192,7 @@ export class MockDashboardService implements DashboardService {
       .slice(0, 12);
 
     return cloneValue({
-      metrics: calculateMetrics(this.store.studies, now, this.store.systemHealth.overallState),
+      metrics: calculateMetrics(this.store.studies, now),
       priorityStudies,
       workflowStages: calculateWorkflowStages(this.store.studies),
       ageing: calculateAgeing(this.store.studies, now),

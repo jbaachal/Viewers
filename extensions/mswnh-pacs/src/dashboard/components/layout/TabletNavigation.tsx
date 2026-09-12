@@ -2,10 +2,12 @@ import React from 'react';
 import { Button, Icons, TooltipProvider } from '@ohif/ui-next';
 
 import { useDashboardContext } from '../../context/DashboardProvider';
+import { useDialogAccessibility } from '../../hooks/useDialogAccessibility';
 import { NavigationItems } from './NavigationItems';
 
 export function TabletNavigation({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { demoRole } = useDashboardContext();
+  const { dialogRef, onKeyDown } = useDialogAccessibility<HTMLElement>(open, onClose);
   if (!open) return null;
 
   return (
@@ -13,11 +15,17 @@ export function TabletNavigation({ open, onClose }: { open: boolean; onClose: ()
       <button
         type="button"
         aria-label="Close navigation"
+        tabIndex={-1}
         className="absolute inset-0 bg-black/70"
         onClick={onClose}
       />
       <aside
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
         aria-label="PACS navigation drawer"
+        tabIndex={-1}
+        onKeyDown={onKeyDown}
         className="bg-card border-input absolute inset-y-0 left-0 flex w-[min(88vw,320px)] flex-col border-r shadow-2xl"
       >
         <div className="border-input/50 flex h-16 items-center justify-between border-b px-4">
