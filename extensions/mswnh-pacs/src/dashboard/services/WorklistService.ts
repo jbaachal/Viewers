@@ -15,6 +15,7 @@ export interface WorklistService {
   searchStudies(search: string, limit?: number): Promise<Study[]>;
   getStudy(studyId: string): Promise<Study | null>;
   assignToMe(studyId: string): Promise<Study>;
+  assign(studyId: string, radiologistId: string, radiologistName: string): Promise<Study>;
   reserve(studyId: string): Promise<Study>;
   releaseReservation(studyId: string): Promise<Study>;
   openStudy(studyId: string): Promise<Study>;

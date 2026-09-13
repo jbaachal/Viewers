@@ -379,14 +379,6 @@ export function DashboardHeader({
               <span className="text-muted-foreground block text-xs">Authenticated PACS role</span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onSelect={() => {
-                setPasswordError(null);
-                setPasswordDialogOpen(true);
-              }}
-            >
-              <Icons.Lock className="mr-2 h-4 w-4" /> Change Password
-            </DropdownMenuItem>
             <DropdownMenuLabel className="text-muted-foreground pt-2 text-xs font-medium uppercase tracking-wide">
               Appearance
             </DropdownMenuLabel>
@@ -405,10 +397,19 @@ export function DashboardHeader({
                 {mode === 'light' ? 'Light' : mode === 'dark' ? 'Dark' : 'Use system setting'}
               </DropdownMenuItem>
             ))}
+            <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={showAbout}>
               <Icons.Info className="mr-2 h-4 w-4" /> About
             </DropdownMenuItem>
             <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={() => {
+                setPasswordError(null);
+                setPasswordDialogOpen(true);
+              }}
+            >
+              <Icons.Lock className="mr-2 h-4 w-4" /> Change Password
+            </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={() =>
                 navigate('/logout?redirect_uri=' + encodeURIComponent(window.location.href))

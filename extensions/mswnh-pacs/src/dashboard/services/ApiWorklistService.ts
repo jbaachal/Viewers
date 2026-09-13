@@ -37,6 +37,7 @@ type ApiStudy = {
   assignedRadiologistName: string | null;
   assignedAt: string | null;
   reservationOwnerId: string | null;
+  reservationOwnerName: string | null;
   reservationExpiresAt: string | null;
   firstOpenedAt: string | null;
   reportingStartedAt: string | null;
@@ -201,6 +202,7 @@ function mapStudy(
     assignedRadiologistName: item.assignedRadiologistName,
     assignedAt: item.assignedAt,
     reservedByRadiologistId: item.reservationOwnerId,
+    reservedByRadiologistName: item.reservationOwnerName,
     reservationExpiresAt: item.reservationExpiresAt,
     firstOpenedAt: item.firstOpenedAt,
     reportingStartedAt: item.reportingStartedAt,
@@ -285,6 +287,10 @@ export class ApiWorklistService implements WorklistService {
 
   assignToMe(studyId: string) {
     return this.mutate(studyId, 'POST', 'claim');
+  }
+
+  assign(studyId: string, radiologistId: string, radiologistName: string) {
+    return this.mutate(studyId, 'POST', 'assign', { radiologistId, radiologistName });
   }
 
   reserve(studyId: string) {

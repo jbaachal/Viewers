@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Icons } from '@ohif/ui-next';
+import { Button, Icons, useUserAuthentication } from '@ohif/ui-next';
 import { useNavigate } from 'react-router-dom';
 
 import {
@@ -15,13 +15,42 @@ import {
 import { useDashboardContext } from '../context/DashboardProvider';
 import { useDialogAccessibility } from '../hooks/useDialogAccessibility';
 import { useWorklist } from '../hooks/useWorklist';
-import { mockRadiologists } from '../mock';
+import { mockRadiologists, MOCK_CURRENT_RADIOLOGIST_ID } from '../mock';
 import type { Study, StudyNote, StudyPriority, StudySortField } from '../models';
 import { getViewerLaunchUrl } from '../utils/getViewerLaunchUrl';
+
+function getUserIdentity(user: any): { id: string | null; name: string } {
+  let claims = user?.profile || user || {};
+  if (!claims.sub && typeof user?.access_token === 'string') {
+    try {
+      const rawPayload = user.access_token.split('.')[1].replaceAll('-', '+').replaceAll('_', '/');
+      const payload = rawPayload.padEnd(Math.ceil(rawPayload.length / 4) * 4, '=');
+      claims = { ...claims, ...JSON.parse(window.atob(payload)) };
+    } catch {
+      // A malformed token is handled by the API; it must not enable ownership actions here.
+    }
+  }
+  return {
+    id: claims.sub || null,
+    name: claims.name || claims.preferred_username || 'PACS user',
+  };
+}
 
 export function RadiologistWorklist() {
   const navigate = useNavigate();
   const { services, demoRole } = useDashboardContext();
+  const [{ user }] = useUserAuthentication() as any;
+  const currentUser = useMemo(() => {
+    if (services?.dataSource === 'MOCK') {
+      return {
+        id: MOCK_CURRENT_RADIOLOGIST_ID,
+        name:
+          mockRadiologists.find(candidate => candidate.id === MOCK_CURRENT_RADIOLOGIST_ID)?.name ||
+          'Current user',
+      };
+    }
+    return getUserIdentity(user);
+  }, [services?.dataSource, user]);
   const worklist = useWorklist();
   const [selectedStudy, setSelectedStudy] = useState<Study | null>(null);
   const [notesStudy, setNotesStudy] = useState<Study | null>(null);
@@ -127,12 +156,30 @@ export function RadiologistWorklist() {
 
   const handlers = useMemo<StudyActionHandlers>(
     () => ({
-      onAssign: study =>
-        void runAction(
-          study,
-          () => services!.worklist.assignToMe(study.id),
-          'Study assigned to you.'
-        ),
+      onAssign: study => {
+        const assignedToAnother = Boolean(
+          study.assignedRadiologistId && study.assignedRadiologistId !== currentUser.id
+        );
+        const assign = () =>
+          void runAction(
+            study,
+            () =>
+              assignedToAnother && demoRole === 'PACS_ADMIN' && currentUser.id
+                ? services!.worklist.assign(study.id, currentUser.id, currentUser.name)
+                : services!.worklist.assignToMe(study.id),
+            'Study assigned to you.'
+          );
+        if (assignedToAnother && demoRole === 'PACS_ADMIN') {
+          setConfirmation({
+            title: 'Reassign this study to yourself?',
+            description: `This will replace ${study.assignedRadiologistName || 'the current assignee'} with ${currentUser.name}.`,
+            confirmLabel: 'Assign to Me',
+            action: assign,
+          });
+          return;
+        }
+        assign();
+      },
       onReserve: study =>
         void runAction(
           study,
@@ -181,7 +228,7 @@ export function RadiologistWorklist() {
       },
       onOpenViewer: study => openStudyInViewer(study),
     }),
-    [openStudyInViewer, runAction, services]
+    [currentUser, demoRole, openStudyInViewer, runAction, services]
   );
 
   const sort = (field: StudySortField) => {
@@ -298,6 +345,7 @@ export function RadiologistWorklist() {
         study={selectedStudy}
         radiologists={mockRadiologists}
         role={demoRole}
+        currentUserId={currentUser.id}
         busy={busyStudyId === selectedStudy?.id}
         handlers={handlers}
         onClose={() => worklist.selectStudy(null)}

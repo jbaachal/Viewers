@@ -85,6 +85,7 @@ export type Study = {
   assignedRadiologistName?: string | null;
   assignedAt: string | null;
   reservedByRadiologistId: string | null;
+  reservedByRadiologistName?: string | null;
   reservationExpiresAt: string | null;
   firstOpenedAt: string | null;
   reportingStartedAt: string | null;

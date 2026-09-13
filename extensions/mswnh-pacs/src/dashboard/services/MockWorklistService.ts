@@ -211,6 +211,19 @@ export class MockWorklistService implements WorklistService {
     return this.finishUpdate(study);
   }
 
+  async assign(studyId: string, radiologistId: string, radiologistName: string): Promise<Study> {
+    const study = this.requireStudy(studyId);
+    if (!['RECEIVED', 'ASSIGNED'].includes(study.status)) {
+      throw new MockWorkflowValidationError('Only received or assigned studies can be assigned.');
+    }
+    study.assignedRadiologistId = radiologistId;
+    study.assignedRadiologistName = radiologistName;
+    study.assignedAt = this.now().toISOString();
+    if (study.status === 'RECEIVED') study.status = 'ASSIGNED';
+    this.recordEvent(study, 'STUDY_ASSIGNED', `Study assigned to ${radiologistName}`);
+    return this.finishUpdate(study);
+  }
+
   async reserve(studyId: string): Promise<Study> {
     const study = this.requireStudy(studyId);
     const now = this.now();
@@ -222,6 +235,7 @@ export class MockWorklistService implements WorklistService {
       throw new MockWorkflowConflictError('Another radiologist currently holds this reservation.');
     }
     study.reservedByRadiologistId = this.currentRadiologistId;
+    study.reservedByRadiologistName = 'Current user';
     study.reservationExpiresAt = new Date(now.getTime() + 15 * 60_000).toISOString();
     this.recordEvent(study, 'STATUS_CHANGED', 'Study reserved for 15 minutes');
     return this.finishUpdate(study);
@@ -237,6 +251,7 @@ export class MockWorklistService implements WorklistService {
       throw new MockWorkflowConflictError('Only the reservation owner can release this study.');
     }
     study.reservedByRadiologistId = null;
+    study.reservedByRadiologistName = null;
     study.reservationExpiresAt = null;
     this.recordEvent(study, 'STATUS_CHANGED', 'Study reservation released');
     return this.finishUpdate(study);

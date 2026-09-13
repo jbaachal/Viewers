@@ -21,6 +21,7 @@ export function StudyDetailsDrawer({
   study,
   radiologists,
   role,
+  currentUserId,
   busy,
   handlers,
   onClose,
@@ -28,6 +29,7 @@ export function StudyDetailsDrawer({
   study: Study | null;
   radiologists: Radiologist[];
   role: DemoRole;
+  currentUserId: string | null;
   busy: boolean;
   handlers: StudyActionHandlers;
   onClose: () => void;
@@ -38,6 +40,14 @@ export function StudyDetailsDrawer({
     study.assignedRadiologistName ||
     radiologists.find(candidate => candidate.id === study.assignedRadiologistId)?.name ||
     'Unassigned';
+  const canReport = role === 'RADIOLOGIST' || role === 'PACS_ADMIN';
+  const canAssign = ['RECEIVED', 'ASSIGNED'].includes(study.status);
+  const assignedToMe = Boolean(currentUserId && study.assignedRadiologistId === currentUserId);
+  const assignedToAnother = Boolean(study.assignedRadiologistId && !assignedToMe);
+  const canTakeAssignment = !assignedToAnother || role === 'PACS_ADMIN';
+  const canReserve = ['RECEIVED', 'ASSIGNED', 'IN_REVIEW'].includes(study.status);
+  const reservedByMe = Boolean(currentUserId && study.reservedByRadiologistId === currentUserId);
+  const reservedByAnother = Boolean(study.reservedByRadiologistId && !reservedByMe);
 
   return (
     <div
@@ -94,6 +104,42 @@ export function StudyDetailsDrawer({
             >
               Notes ({study.noteCount ?? study.notes.length})
             </Button>
+            {canReport && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={busy || assignedToMe || !canAssign || !canTakeAssignment}
+                title={
+                  assignedToMe
+                    ? 'This study is already assigned to you.'
+                    : assignedToAnother && role !== 'PACS_ADMIN'
+                      ? `This study is assigned to ${assignee}.`
+                      : undefined
+                }
+                onClick={() => handlers.onAssign(study)}
+              >
+                {assignedToMe ? 'Assigned to Me' : 'Assign to Me'}
+              </Button>
+            )}
+            {canReport && canReserve && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={busy || reservedByAnother}
+                title={
+                  reservedByAnother
+                    ? `This study is currently reserved by ${study.reservedByRadiologistName || study.reservedByRadiologistId}.`
+                    : undefined
+                }
+                onClick={() =>
+                  reservedByMe ? handlers.onRelease(study) : handlers.onReserve(study)
+                }
+              >
+                {reservedByMe ? 'Release Reservation' : reservedByAnother ? 'Reserved' : 'Reserve'}
+              </Button>
+            )}
             <StudyActions
               study={study}
               role={role}

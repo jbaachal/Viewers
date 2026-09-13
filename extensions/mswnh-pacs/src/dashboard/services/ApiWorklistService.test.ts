@@ -23,6 +23,7 @@ const apiStudy = {
   assignedRadiologistName: 'Dr Test',
   assignedAt: '2026-09-10T10:10:00Z',
   reservationOwnerId: null,
+  reservationOwnerName: null,
   reservationExpiresAt: null,
   firstOpenedAt: null,
   reportingStartedAt: '2026-09-10T10:15:00Z',
@@ -123,6 +124,25 @@ describe('ApiWorklistService', () => {
       acknowledged: false,
     });
     expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:5255/api/worklist/alerts');
+  });
+
+  it('reassigns a study through the manager assignment endpoint', async () => {
+    fetchMock
+      .mockResolvedValueOnce(response({ studies: [apiStudy], total: 1, page: 1, pageSize: 20 }))
+      .mockResolvedValueOnce(response(apiStudy))
+      .mockResolvedValueOnce(response({ study: apiStudy, notes: [], workflowHistory: [] }))
+      .mockResolvedValueOnce(response([]));
+    const service = new ApiWorklistService('http://localhost:5255', () => ({}));
+    await service.queryStudies();
+
+    await service.assign('1.2.3.4', 'admin-1', 'PACS Admin');
+
+    expect(fetchMock.mock.calls[1][0]).toBe('http://localhost:5255/api/worklist/1.2.3.4/assign');
+    expect(JSON.parse(fetchMock.mock.calls[1][1]?.body as string)).toEqual({
+      radiologistId: 'admin-1',
+      radiologistName: 'PACS Admin',
+      version: apiStudy.version,
+    });
   });
 
   it('surfaces Problem Details and invokes the unauthenticated handler', async () => {

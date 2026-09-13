@@ -45,6 +45,22 @@ describe('MockWorklistService', () => {
     expect(reported.status).toBe('REPORTED');
   });
 
+  it('supports manager reassignment to the current user', async () => {
+    const service = createService();
+
+    const reassigned = await service.assign(
+      'study-4',
+      MOCK_CURRENT_RADIOLOGIST_ID,
+      'Dr Sarah Akello'
+    );
+
+    expect(reassigned).toMatchObject({
+      assignedRadiologistId: MOCK_CURRENT_RADIOLOGIST_ID,
+      assignedRadiologistName: 'Dr Sarah Akello',
+      status: 'ASSIGNED',
+    });
+  });
+
   it('requires a reason for Emergency priority changes', async () => {
     const service = createService();
     await expect(service.changePriority('study-10', 'EMERGENCY')).rejects.toBeInstanceOf(
