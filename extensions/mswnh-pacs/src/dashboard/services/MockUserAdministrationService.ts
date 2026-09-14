@@ -51,6 +51,8 @@ const roles: PacsRole[] = [
 ];
 
 export class MockUserAdministrationService implements UserAdministrationService {
+  private readonly signatures = new Map<string, Blob>();
+
   private users: PacsUser[] = [
     {
       id: 'demo-admin',
@@ -83,10 +85,16 @@ export class MockUserAdministrationService implements UserAdministrationService 
     return roles;
   }
 
+  async getSignature(id: string): Promise<Blob | null> {
+    return this.signatures.get(id) ?? null;
+  }
+
   async createUser(input: CreatePacsUser): Promise<PacsUser> {
     const {
       initialPassword: _initialPassword,
       temporaryPassword: _temporaryPassword,
+      signatureFile,
+      removeSignature: _removeSignature,
       ...profile
     } = input;
     const user: PacsUser = {
@@ -95,13 +103,17 @@ export class MockUserAdministrationService implements UserAdministrationService 
       createdTimestamp: Date.now(),
     };
     this.users.push(user);
+    if (signatureFile) this.signatures.set(user.id, signatureFile);
     return user;
   }
 
   async updateUser(id: string, input: UpdatePacsUser): Promise<PacsUser> {
     const index = this.users.findIndex(user => user.id === id);
     if (index < 0) throw new Error('The user was not found.');
-    this.users[index] = { ...this.users[index], ...input };
+    const { signatureFile, removeSignature, ...profile } = input;
+    this.users[index] = { ...this.users[index], ...profile };
+    if (removeSignature) this.signatures.delete(id);
+    if (signatureFile) this.signatures.set(id, signatureFile);
     return this.users[index];
   }
 

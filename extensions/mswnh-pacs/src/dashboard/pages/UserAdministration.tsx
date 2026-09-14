@@ -57,6 +57,11 @@ export function UserAdministration() {
     window.setTimeout(() => setNotice(null), 4500);
   };
 
+  const loadSignature = useCallback(
+    (userId: string) => services?.userAdministration.getSignature(userId) ?? Promise.resolve(null),
+    [services]
+  );
+
   const saveUser = async (input: CreatePacsUser | UpdatePacsUser) => {
     if (!services) return;
     setBusy(true);
@@ -338,6 +343,7 @@ export function UserAdministration() {
         user={editingUser}
         roles={roles}
         busy={busy}
+        onLoadSignature={loadSignature}
         onSave={saveUser}
         onClose={() => {
           if (!busy) {

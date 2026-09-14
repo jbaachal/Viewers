@@ -8,6 +8,7 @@ describe('dashboard administration navigation', () => {
       ['User Management', '/dashboard/administration'],
       ['System Monitoring', '/dashboard/system'],
       ['Device Inventory', '/dashboard/administration/devices'],
+      ['Device Dropdown Lists', '/dashboard/administration/device-lists'],
       ['SLA Configuration', '/dashboard/administration/sla'],
       ['Audit Log', '/dashboard/audit'],
     ]);

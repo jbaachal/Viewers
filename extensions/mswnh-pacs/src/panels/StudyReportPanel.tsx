@@ -1,9 +1,11 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DicomMetadataStore, useSystem, utils } from '@ohif/core';
+import { useUserAuthentication } from '@ohif/ui-next';
 
 import {
   createStudyReport,
   getStudyReport,
+  getStudyReportSignature,
   SaveStudyReportRequest,
   StudyReport,
   StudyReportsApiError,
@@ -24,6 +26,21 @@ const EMPTY_FORM: SaveStudyReportRequest = {
   recommendation: '',
   signReport: false,
 };
+
+function getRealmRoles(user: any): string[] {
+  const directRoles = user?.profile?.realm_access?.roles || user?.realm_access?.roles;
+  if (Array.isArray(directRoles)) return directRoles;
+  const token = user?.access_token;
+  if (typeof token !== 'string') return [];
+  try {
+    const rawPayload = token.split('.')[1].replaceAll('-', '+').replaceAll('_', '/');
+    const payload = rawPayload.padEnd(Math.ceil(rawPayload.length / 4) * 4, '=');
+    const decoded = JSON.parse(window.atob(payload));
+    return Array.isArray(decoded?.realm_access?.roles) ? decoded.realm_access.roles : [];
+  } catch {
+    return [];
+  }
+}
 
 type StudyContext = StudyReportPdfContext;
 
@@ -191,6 +208,7 @@ function getStudyContext(displaySetService): StudyContext | null {
 
 export default function StudyReportPanel() {
   const { servicesManager } = useSystem();
+  const [{ user }] = useUserAuthentication() as any;
   const { displaySetService, userAuthenticationService } = servicesManager.services;
   const [context, setContext] = useState<StudyContext | null>(null);
   const [report, setReport] = useState<StudyReport | null>(null);
@@ -203,6 +221,10 @@ export default function StudyReportPanel() {
   const [error, setError] = useState<string | null>(null);
   const requestController = useRef<AbortController | null>(null);
   const previewFrameRef = useRef<HTMLIFrameElement | null>(null);
+  const canSign = useMemo(
+    () => getRealmRoles(user).some(role => role.toUpperCase() === 'RADIOLOGIST'),
+    [user]
+  );
 
   const authorizationHeaders = useCallback(
     () => userAuthenticationService.getAuthorizationHeader?.() || {},
@@ -307,11 +329,13 @@ export default function StudyReportPanel() {
       setEditing(false);
     } catch (err) {
       setError(
-        err instanceof StudyReportsApiError && err.status === 403
-          ? 'Only authorized radiologists and PACS administrators can create or edit study reports.'
-          : err instanceof Error
-            ? err.message
-            : 'Unable to save the study report.'
+        err instanceof StudyReportsApiError && err.status === 403 && signReport
+          ? 'Only a user with the Radiologist role can sign a report. You may save it as a draft.'
+          : err instanceof StudyReportsApiError && err.status === 403
+            ? 'Only authorized reporting users can create or edit study reports.'
+            : err instanceof Error
+              ? err.message
+              : 'Unable to save the study report.'
       );
     } finally {
       setSaving(false);
@@ -325,7 +349,20 @@ export default function StudyReportPanel() {
     setPrinting(true);
     setError(null);
     try {
-      const pdf = await createStudyReportPdf(report, context);
+      const signature = report.hasSignature
+        ? await getStudyReportSignature(context.studyInstanceUid, {
+            authorizationHeaders: authorizationHeaders(),
+          })
+        : null;
+      const signatureDataUrl = signature
+        ? await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result));
+            reader.onerror = () => reject(reader.error || new Error('Unable to read signature.'));
+            reader.readAsDataURL(signature);
+          })
+        : null;
+      const pdf = await createStudyReportPdf(report, context, signatureDataUrl);
       setPreviewUrl(URL.createObjectURL(pdf.output('blob')));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to create the PDF report.');
@@ -547,7 +584,10 @@ export default function StudyReportPanel() {
               type="button"
               style={styles.button}
               onClick={() => save(true)}
-              disabled={saving}
+              disabled={saving || !canSign}
+              title={
+                canSign ? 'Finalize and sign this report' : 'Only a Radiologist can sign reports'
+              }
             >
               Save & sign
             </button>
@@ -560,6 +600,11 @@ export default function StudyReportPanel() {
               Cancel
             </button>
           </div>
+          {!canSign && (
+            <div style={{ ...styles.label, marginTop: 8 }}>
+              Only a user with the Radiologist role can finalize and sign this report.
+            </div>
+          )}
         </form>
       )}
       {previewUrl && (

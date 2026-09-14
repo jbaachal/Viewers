@@ -31,6 +31,8 @@ export type CreatePacsUser = {
   initialPassword: string;
   temporaryPassword: boolean;
   roles: string[];
+  signatureFile?: File | null;
+  removeSignature?: boolean;
 };
 
 export type UpdatePacsUser = Omit<

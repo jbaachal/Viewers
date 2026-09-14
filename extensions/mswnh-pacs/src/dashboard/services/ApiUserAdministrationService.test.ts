@@ -59,6 +59,37 @@ describe('ApiUserAdministrationService', () => {
     ]);
   });
 
+  it('uploads a Radiologist signature after creating the account', async () => {
+    const signatureFile = new File(['signature'], 'signature.png', { type: 'image/png' });
+    const input = {
+      username: 'radiologist.one',
+      firstName: 'Radiologist',
+      lastName: 'One',
+      email: '',
+      enabled: true,
+      initialPassword: 'secure-password',
+      temporaryPassword: true,
+      roles: ['RADIOLOGIST'],
+      signatureFile,
+    };
+    fetchMock
+      .mockResolvedValueOnce(response({ id: 'radiologist-1', ...input }))
+      .mockResolvedValueOnce(response(undefined, 204));
+    const service = new ApiUserAdministrationService('http://localhost:5255', () => ({
+      Authorization: 'Bearer token',
+    }));
+
+    await service.createUser(input);
+
+    expect(fetchMock.mock.calls[1][0]).toBe(
+      'http://localhost:5255/api/administration/users/radiologist-1/signature'
+    );
+    expect(fetchMock.mock.calls[1][1]).toEqual(
+      expect.objectContaining({ method: 'PUT', body: expect.any(FormData) })
+    );
+    expect((fetchMock.mock.calls[1][1].body as FormData).get('signature')).toBe(signatureFile);
+  });
+
   it('invokes reauthentication and surfaces problem details on unauthorized access', async () => {
     fetchMock.mockResolvedValue(response({ detail: 'Sign in again.' }, 401));
     const unauthenticated = jest.fn();

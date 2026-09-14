@@ -17,6 +17,9 @@ export type StudyReport = {
   reportedBy?: string;
   reportedByName?: string;
   reportSignedAt?: string;
+  hasSignature?: boolean;
+  signatureWidth?: number;
+  signatureHeight?: number;
   version: string;
 };
 
@@ -58,7 +61,7 @@ async function parseError(response: Response): Promise<StudyReportsApiError> {
   let detail = response.statusText;
 
   try {
-    if (contentType.includes('application/json')) {
+    if (contentType.includes('json')) {
       const body = await response.json();
       detail = body.detail || body.title || JSON.stringify(body.errors || body);
     } else {
@@ -90,6 +93,20 @@ export async function getStudyReport(
     throw await parseError(response);
   }
   return response.json();
+}
+
+export async function getStudyReportSignature(
+  studyInstanceUid: string,
+  { authorizationHeaders, signal }: RequestOptions
+): Promise<Blob | null> {
+  const response = await fetch(`${getReportUrl(studyInstanceUid)}/signature`, {
+    method: 'GET',
+    headers: { ...authorizationHeaders, Accept: 'image/png,image/jpeg' },
+    signal,
+  });
+  if (response.status === 404) return null;
+  if (!response.ok) throw await parseError(response);
+  return response.blob();
 }
 
 export async function createStudyReport(

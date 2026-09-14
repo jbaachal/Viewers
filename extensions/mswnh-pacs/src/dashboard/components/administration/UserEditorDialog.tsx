@@ -9,6 +9,7 @@ export function UserEditorDialog({
   user,
   roles,
   busy,
+  onLoadSignature,
   onSave,
   onClose,
 }: {
@@ -16,6 +17,7 @@ export function UserEditorDialog({
   user: PacsUser | null;
   roles: PacsRole[];
   busy: boolean;
+  onLoadSignature: (userId: string) => Promise<Blob | null>;
   onSave: (input: CreatePacsUser | UpdatePacsUser) => Promise<void>;
   onClose: () => void;
 }) {
@@ -27,6 +29,11 @@ export function UserEditorDialog({
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [password, setPassword] = useState('');
   const [temporaryPassword, setTemporaryPassword] = useState(true);
+  const [signatureFile, setSignatureFile] = useState<File | null>(null);
+  const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
+  const [removeSignature, setRemoveSignature] = useState(false);
+  const [signatureError, setSignatureError] = useState<string | null>(null);
+  const [signatureLoading, setSignatureLoading] = useState(false);
   const { dialogRef, onKeyDown } = useDialogAccessibility<HTMLFormElement>(open, onClose);
 
   useEffect(() => {
@@ -41,10 +48,82 @@ export function UserEditorDialog({
     setTemporaryPassword(true);
   }, [open, user]);
 
+  useEffect(() => {
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    setSignatureFile(null);
+    setSignaturePreview(null);
+    setRemoveSignature(false);
+    setSignatureError(null);
+    setSignatureLoading(false);
+    if (!open || !user || !user.roles.includes('RADIOLOGIST')) return undefined;
+    setSignatureLoading(true);
+    void onLoadSignature(user.id)
+      .then(blob => {
+        if (!blob || cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setSignaturePreview(objectUrl);
+      })
+      .catch(reason => {
+        if (!cancelled) {
+          setSignatureError(
+            reason instanceof Error ? reason.message : 'The existing signature could not be loaded.'
+          );
+        }
+      })
+      .finally(() => !cancelled && setSignatureLoading(false));
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [onLoadSignature, open, user]);
+
+  useEffect(
+    () => () => {
+      if (signaturePreview?.startsWith('blob:')) URL.revokeObjectURL(signaturePreview);
+    },
+    [signaturePreview]
+  );
+
   if (!open) return null;
   const editing = Boolean(user);
+  const isRadiologist = selectedRoles.includes('RADIOLOGIST');
   const valid =
-    username.trim().length >= 3 && selectedRoles.length > 0 && (editing || password.length >= 6);
+    username.trim().length >= 3 &&
+    selectedRoles.length > 0 &&
+    (editing || password.length >= 6) &&
+    !signatureError &&
+    !signatureLoading;
+
+  const selectSignature = async (file: File | undefined) => {
+    if (!file) return;
+    setSignatureError(null);
+    if (!['image/png', 'image/jpeg'].includes(file.type)) {
+      setSignatureError('Upload a PNG, JPG or JPEG image.');
+      return;
+    }
+    if (file.size > 1024 * 1024) {
+      setSignatureError('The signature image must be no larger than 1 MB.');
+      return;
+    }
+    try {
+      const bitmap = await createImageBitmap(file);
+      const fits =
+        Math.min(bitmap.width, bitmap.height) <= 200 &&
+        Math.max(bitmap.width, bitmap.height) <= 400;
+      bitmap.close();
+      if (!fits) {
+        setSignatureError('The signature image must fit within 200 x 400 pixels.');
+        return;
+      }
+      if (signaturePreview?.startsWith('blob:')) URL.revokeObjectURL(signaturePreview);
+      setSignatureFile(file);
+      setSignaturePreview(URL.createObjectURL(file));
+      setRemoveSignature(false);
+    } catch {
+      setSignatureError('The selected file is not a valid signature image.');
+    }
+  };
 
   return (
     <div
@@ -68,6 +147,8 @@ export function UserEditorDialog({
             email: email.trim(),
             enabled,
             roles: selectedRoles,
+            signatureFile: isRadiologist ? signatureFile : null,
+            removeSignature: isRadiologist ? removeSignature : false,
           };
           void onSave(
             editing
@@ -180,6 +261,66 @@ export function UserEditorDialog({
             <p className="mt-3 text-xs text-amber-300">Select at least one role.</p>
           )}
         </fieldset>
+
+        {isRadiologist && (
+          <fieldset className="border-input/60 mt-5 rounded-lg border p-4">
+            <legend className="text-foreground px-1 text-sm font-semibold">
+              Scanned signature
+            </legend>
+            <p className="text-muted-foreground mt-1 text-xs">
+              Optional during account setup; required when this Radiologist uses Save &amp; sign.
+              PNG, JPG or JPEG, maximum 1 MB and 200 x 400 pixels.
+            </p>
+            {signaturePreview && !removeSignature && (
+              <div className="border-input min-h-24 min-w-48 mt-3 inline-flex items-center justify-center rounded-lg border bg-white p-3">
+                <img
+                  src={signaturePreview}
+                  alt="Scanned signature preview"
+                  className="max-h-[200px] max-w-[400px] object-contain"
+                />
+              </div>
+            )}
+            {signatureLoading && (
+              <p className="text-muted-foreground mt-3 text-sm">Loading existing signature...</p>
+            )}
+            {signatureError && (
+              <p
+                className="text-destructive mt-3 text-sm"
+                role="alert"
+              >
+                {signatureError}
+              </p>
+            )}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <label className="border-input text-foreground hover:bg-muted cursor-pointer rounded-md border px-3 py-2 text-sm">
+                {signaturePreview ? 'Replace signature' : 'Upload signature'}
+                <input
+                  type="file"
+                  className="sr-only"
+                  accept="image/png,image/jpeg,.png,.jpg,.jpeg"
+                  disabled={busy || signatureLoading}
+                  onChange={event => void selectSignature(event.target.files?.[0])}
+                />
+              </label>
+              {signaturePreview && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={busy}
+                  onClick={() => {
+                    if (signaturePreview.startsWith('blob:')) URL.revokeObjectURL(signaturePreview);
+                    setSignaturePreview(null);
+                    setSignatureFile(null);
+                    setRemoveSignature(true);
+                    setSignatureError(null);
+                  }}
+                >
+                  Remove signature
+                </Button>
+              )}
+            </div>
+          </fieldset>
+        )}
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <label className="text-foreground flex items-center gap-2 text-sm">
