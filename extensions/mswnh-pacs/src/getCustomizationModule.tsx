@@ -71,6 +71,23 @@ export default function getCustomizationModule() {
                 ),
               },
               {
+                path: '/dashboard/administration/devices',
+                private: true,
+                children: (props: any) => (
+                  <DashboardRoute
+                    page="devices"
+                    servicesManager={props.servicesManager}
+                  />
+                ),
+              },
+              {
+                path: '/dashboard/administration/device-lists',
+                private: true,
+                children: (props: any) => (
+                  <DashboardRoute page="device-catalog" servicesManager={props.servicesManager} />
+                ),
+              },
+              {
                 path: '/dashboard/audit',
                 private: true,
                 children: (props: any) => (

@@ -48,6 +48,7 @@ export type DashboardAlert = {
   acknowledged: boolean;
   studyId?: string;
   componentId?: string;
+  href?: string;
 };
 
 export type DashboardSnapshot = {

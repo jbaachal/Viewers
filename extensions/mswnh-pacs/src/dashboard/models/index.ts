@@ -5,3 +5,4 @@ export * from './systemHealth';
 export * from './userAdministration';
 export * from './slaSettings';
 export * from './auditLog';
+export * from './deviceInventory';

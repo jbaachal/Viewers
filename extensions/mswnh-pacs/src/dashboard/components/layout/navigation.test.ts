@@ -7,6 +7,7 @@ describe('dashboard administration navigation', () => {
     expect(administration?.children?.map(item => [item.label, item.to])).toEqual([
       ['User Management', '/dashboard/administration'],
       ['System Monitoring', '/dashboard/system'],
+      ['Device Inventory', '/dashboard/administration/devices'],
       ['SLA Configuration', '/dashboard/administration/sla'],
       ['Audit Log', '/dashboard/audit'],
     ]);

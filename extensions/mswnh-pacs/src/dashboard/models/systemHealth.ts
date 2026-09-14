@@ -30,6 +30,28 @@ export type SystemHealthComponent = {
   responseTimeMs: number | null;
   message: string;
   lastStudyReceivedAt?: string | null;
+  failedAssociations?: DicomAssociationFailure[] | null;
+};
+
+export type DicomAssociationFailure = {
+  occurredAt: string;
+  failureType: string;
+  callingAeTitle: string | null;
+  calledAeTitle: string | null;
+  sourceIp: string | null;
+  associationId: string | null;
+  detail: string;
+};
+
+export type StorageDiskHealth = {
+  id: string;
+  name: string;
+  mountPath: string;
+  usedTerabytes: number;
+  totalTerabytes: number;
+  remainingTerabytes: number;
+  usedPercent: number;
+  state: HealthState;
 };
 
 export type StorageHealth = {
@@ -38,6 +60,7 @@ export type StorageHealth = {
   remainingTerabytes: number;
   usedPercent: number;
   estimatedExhaustionDate: string | null;
+  disks: StorageDiskHealth[];
 };
 
 export type DicomAeTitleHealth = {

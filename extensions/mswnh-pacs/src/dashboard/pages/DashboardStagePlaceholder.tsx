@@ -41,6 +41,16 @@ const pageCopy = {
     description: 'PACS workflow, clinical record, administration, and security activity.',
     icon: 'ListView',
   },
+  devices: {
+    title: 'Device Inventory',
+    description: 'Automatically observed DICOM devices and their AE title endpoints.',
+    icon: 'PatientStudyList',
+  },
+  'device-catalog': {
+    title: 'Device Dropdown Lists',
+    description: 'Managed modality, department and manufacturer values.',
+    icon: 'ListView',
+  },
 } as const;
 
 export type DashboardPageId = keyof typeof pageCopy;

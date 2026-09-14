@@ -32,7 +32,10 @@ function getUserIdentity(user: any): { id: string | null; name: string } {
   }
   return {
     id: claims.sub || null,
-    name: claims.name || claims.preferred_username || 'PACS user',
+    name:
+      claims.name ||
+      [claims.given_name, claims.family_name].filter(Boolean).join(' ') ||
+      'Name not configured',
   };
 }
 

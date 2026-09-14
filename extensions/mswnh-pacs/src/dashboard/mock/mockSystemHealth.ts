@@ -15,6 +15,18 @@ export function createMockSystemHealth(now = new Date()): SystemHealthSnapshot {
       remainingTerabytes: 8.6,
       usedPercent: 78.5,
       estimatedExhaustionDate: new Date(now.getTime() + 214 * 86_400_000).toISOString(),
+      disks: [
+        {
+          id: 'archive-1',
+          name: 'Archive storage',
+          mountPath: '/storage/fs1',
+          usedTerabytes: 31.4,
+          totalTerabytes: 40,
+          remainingTerabytes: 8.6,
+          usedPercent: 78.5,
+          state: 'HEALTHY',
+        },
+      ],
     },
     lastSuccessfulBackupAt: minutesAgo(now, 382),
     failedDicomAssociations24Hours: 7,

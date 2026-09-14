@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, Icons } from '@ohif/ui-next';
 
 import type { DemoRole } from '../../context/DashboardProvider';
@@ -7,6 +7,8 @@ import { useDialogAccessibility } from '../../hooks/useDialogAccessibility';
 import { formatKampalaDateTime, formatRemaining } from '../../utils/formatDashboardDate';
 import { StudyActions, type StudyActionHandlers } from './StudyActions';
 import { PriorityBadge, StatusBadge } from './WorklistStatusBadge';
+import { useDashboardContext } from '../../context/DashboardProvider';
+import type { StudySourceDevice } from '../../models';
 
 function Detail({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -34,6 +36,16 @@ export function StudyDetailsDrawer({
   handlers: StudyActionHandlers;
   onClose: () => void;
 }) {
+  const { services } = useDashboardContext();
+  const [source, setSource] = useState<StudySourceDevice | null>(null);
+  const [sourceError, setSourceError] = useState('');
+  const [sourceLoading, setSourceLoading] = useState(false);
+  const [showSource, setShowSource] = useState(false);
+  useEffect(() => {
+    setSource(null);
+    setSourceError('');
+    setShowSource(false);
+  }, [study?.id]);
   const { dialogRef, onKeyDown } = useDialogAccessibility<HTMLElement>(Boolean(study), onClose);
   if (!study) return null;
   const assignee =
@@ -140,6 +152,33 @@ export function StudyDetailsDrawer({
                 {reservedByMe ? 'Release Reservation' : reservedByAnother ? 'Reserved' : 'Reserve'}
               </Button>
             )}
+            {role === 'PACS_ADMIN' && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={busy || sourceLoading}
+                onClick={() => {
+                  if (showSource) {
+                    setShowSource(false);
+                    return;
+                  }
+                  setShowSource(true);
+                  if (source || sourceLoading) return;
+                  setSourceLoading(true);
+                  setSourceError('');
+                  void services?.deviceInventory
+                    .getStudySource(study.id)
+                    .then(setSource)
+                    .catch(error =>
+                      setSourceError(error instanceof Error ? error.message : 'Source lookup failed.')
+                    )
+                    .finally(() => setSourceLoading(false));
+                }}
+              >
+                Source
+              </Button>
+            )}
             <StudyActions
               study={study}
               role={role}
@@ -147,6 +186,24 @@ export function StudyDetailsDrawer({
               handlers={handlers}
             />
           </div>
+
+          {role === 'PACS_ADMIN' && showSource && (
+            <section className="border-primary/50 bg-card rounded-lg border p-4">
+              <h3 className="text-foreground font-semibold">Source device</h3>
+              {sourceLoading && <p className="text-muted-foreground mt-3 text-sm">Loading source detailsâ€¦</p>}
+              {sourceError && <p className="text-destructive mt-3 text-sm">{sourceError}</p>}
+              {source && (
+                <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Detail label="Device">{source.deviceName ?? 'Not registered'}</Detail>
+                  <Detail label="AE Title">{source.aeTitle}</Detail>
+                  <Detail label="Location">{source.location ?? 'Not supplied'}</Detail>
+                  <Detail label="Department">{source.department ?? 'Not supplied'}</Detail>
+                  <Detail label="Modality">{source.modality ?? 'Not supplied'}</Detail>
+                  <Detail label="Manufacturer">{source.manufacturer ?? 'Not supplied'}</Detail>
+                </dl>
+              )}
+            </section>
+          )}
 
           <section className="border-input/60 rounded-lg border p-4">
             <h3 className="text-foreground mb-4 font-semibold">Study</h3>

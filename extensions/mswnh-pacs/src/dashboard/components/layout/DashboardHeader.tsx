@@ -99,11 +99,24 @@ export function DashboardHeader({
   const refreshHeaderState = useCallback(async () => {
     if (!services) return;
     try {
-      const nextAlerts =
+      const [workflowResult, deviceResult] = await Promise.allSettled([
         services.dataSource === 'LIVE'
-          ? await services.worklist.getAlerts()
-          : await services.dashboard.getSnapshot().then(snapshot => snapshot.alerts);
-      setAlerts(nextAlerts);
+          ? services.worklist.getAlerts()
+          : services.dashboard.getSnapshot().then(snapshot => snapshot.alerts),
+        demoRole === 'PACS_ADMIN'
+          ? services.deviceInventory.getNotifications()
+          : Promise.resolve([]),
+      ]);
+      const workflowAlerts = workflowResult.status === 'fulfilled' ? workflowResult.value : [];
+      const deviceAlerts = deviceResult.status === 'fulfilled' ? deviceResult.value : [];
+      setAlerts([
+        ...deviceAlerts.map(alert => ({
+          ...alert,
+          acknowledged: false,
+          href: `/dashboard/administration/devices?device=${encodeURIComponent(alert.deviceId)}`,
+        })),
+        ...workflowAlerts,
+      ]);
     } catch {
       setAlerts([]);
     }
@@ -176,7 +189,8 @@ export function DashboardHeader({
     if (services?.dataSource === 'LIVE') {
       const alert = alerts.find(item => item.id === alertId);
       navigate(
-        alert?.studyId ? `/worklist?study=${encodeURIComponent(alert.studyId)}` : '/worklist'
+        alert?.href ??
+          (alert?.studyId ? `/worklist?study=${encodeURIComponent(alert.studyId)}` : '/worklist')
       );
       return;
     }
@@ -317,14 +331,12 @@ export function DashboardHeader({
             className="w-80"
           >
             <DropdownMenuLabel>
-              {services?.dataSource === 'LIVE'
-                ? 'Live SLA notifications'
-                : 'Prototype notifications'}
+              {services?.dataSource === 'LIVE' ? 'Live notifications' : 'Prototype notifications'}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             {alerts.length === 0 && (
               <div className="text-muted-foreground px-3 py-4 text-center text-sm">
-                No active SLA warnings.
+                No active notifications.
               </div>
             )}
             {alerts.slice(0, 5).map(alert => (

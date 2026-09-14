@@ -2,12 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@ohif/ui-next';
 
 import { DashboardLoadingSkeleton, DashboardSection } from '../components/dashboard';
-import {
-  DeviceInventory,
-  SystemComponentCard,
-  SystemDetailsDialog,
-  SystemStatusBadge,
-} from '../components/system';
+import { SystemComponentCard, SystemDetailsDialog, SystemStatusBadge } from '../components/system';
 import { useDashboardContext } from '../context/DashboardProvider';
 import type { HealthState, SystemHealthComponent, SystemHealthSnapshot } from '../models';
 import { formatKampalaDateTime } from '../utils/formatDashboardDate';
@@ -26,11 +21,13 @@ function SummaryCard({
   value,
   detail,
   state = 'info',
+  action,
 }: {
   label: string;
   value: string;
   detail: string;
   state?: 'healthy' | 'warning' | 'critical' | 'info';
+  action?: React.ReactNode;
 }) {
   const styles = {
     healthy: 'border-emerald-400/30 bg-emerald-400/5',
@@ -43,6 +40,7 @@ function SummaryCard({
       <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">{label}</p>
       <strong className="text-foreground mt-2 block text-2xl tabular-nums">{value}</strong>
       <p className="text-muted-foreground mt-1 text-xs">{detail}</p>
+      {action && <div className="mt-3">{action}</div>}
     </section>
   );
 }
@@ -238,7 +236,7 @@ export function SystemMonitoring() {
               }
               detail={
                 snapshot.offlineModalityCount === null
-                  ? 'DICOM C-ECHO probes are not configured'
+                  ? 'Complete production C-ECHO endpoints in Device Inventory'
                   : 'Devices requiring attention'
               }
               state={
@@ -247,6 +245,16 @@ export function SystemMonitoring() {
                   : snapshot.offlineModalityCount === 0
                     ? 'healthy'
                     : 'info'
+              }
+              action={
+                snapshot.offlineModalityCount === null ? (
+                  <a
+                    href="/dashboard/administration/devices"
+                    className="text-primary text-xs font-medium hover:underline"
+                  >
+                    Configure device monitoring
+                  </a>
+                ) : undefined
               }
             />
           </div>
@@ -273,23 +281,41 @@ export function SystemMonitoring() {
                       : 'Unavailable'}
                   </span>
                 </div>
+                <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {snapshot.storage.disks.map(disk => (
+                    <article
+                      key={disk.id}
+                      className="border-input/60 bg-background rounded-lg border p-3"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <strong className="text-foreground text-sm">{disk.name}</strong>
+                          <span className="text-muted-foreground block break-all text-xs">
+                            {disk.mountPath}
+                          </span>
+                        </div>
+                        <span
+                          className={`${disk.state === 'CRITICAL' ? 'text-red-400' : disk.state === 'WARNING' ? 'text-amber-400' : 'text-emerald-400'} text-xs font-semibold`}
+                        >
+                          {disk.usedPercent.toFixed(1)}% used
+                        </span>
+                      </div>
+                      <div className="bg-muted mt-3 h-2 overflow-hidden rounded-full">
+                        <div
+                          className={`${disk.state === 'CRITICAL' ? 'bg-red-500' : disk.state === 'WARNING' ? 'bg-amber-400' : 'bg-emerald-400'} h-full rounded-full`}
+                          style={{ width: `${Math.min(disk.usedPercent, 100)}%` }}
+                        />
+                      </div>
+                      <p className="text-muted-foreground mt-2 text-xs">
+                        {disk.usedTerabytes} TB used · {disk.remainingTerabytes} TB free ·{' '}
+                        {disk.totalTerabytes} TB total
+                      </p>
+                    </article>
+                  ))}
+                </div>
               </div>
             </DashboardSection>
           )}
-
-          <DashboardSection
-            title="Device Inventory"
-            description={`${snapshot.devices.length} physical device${snapshot.devices.length === 1 ? '' : 's'} · ${snapshot.devices.reduce((count, device) => count + device.aeTitles.length, 0)} configured AE title${snapshot.devices.reduce((count, device) => count + device.aeTitles.length, 0) === 1 ? '' : 's'}`}
-            action={
-              snapshot.devices.length ? (
-                <span className="text-muted-foreground text-xs">
-                  {snapshot.devices.filter(device => device.state === 'HEALTHY').length} healthy
-                </span>
-              ) : undefined
-            }
-          >
-            <DeviceInventory devices={snapshot.devices} />
-          </DashboardSection>
 
           <DashboardSection
             title="Component health"
@@ -319,6 +345,7 @@ export function SystemMonitoring() {
       ) : null}
       <SystemDetailsDialog
         component={selected}
+        storage={snapshot?.storage}
         onClose={() => setSelected(null)}
       />
     </div>

@@ -49,6 +49,20 @@ export const navigationItems: NavigationItem[] = [
         roles: ['PACS_ADMIN'],
       },
       {
+        id: 'device-inventory',
+        label: 'Device Inventory',
+        to: '/dashboard/administration/devices',
+        icon: 'PatientStudyList',
+        roles: ['PACS_ADMIN'],
+      },
+      {
+        id: 'device-dropdown-lists',
+        label: 'Device Dropdown Lists',
+        to: '/dashboard/administration/device-lists',
+        icon: 'ListView',
+        roles: ['PACS_ADMIN'],
+      },
+      {
         id: 'sla-administration',
         label: 'SLA Configuration',
         to: '/dashboard/administration/sla',

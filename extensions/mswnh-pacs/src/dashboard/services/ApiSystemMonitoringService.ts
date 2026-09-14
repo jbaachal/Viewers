@@ -59,6 +59,15 @@ export class ApiSystemMonitoringService implements SystemMonitoringService {
         ...component,
         state: mapState(component.state),
       })),
+      storage: snapshot.storage
+        ? {
+            ...snapshot.storage,
+            disks: (snapshot.storage.disks ?? []).map(disk => ({
+              ...disk,
+              state: mapState(disk.state),
+            })),
+          }
+        : null,
       devices: (snapshot.devices ?? []).map(device => ({
         ...device,
         state: mapState(device.state),

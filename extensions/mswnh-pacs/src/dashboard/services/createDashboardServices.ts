@@ -23,6 +23,9 @@ import { MockAccountService } from './MockAccountService';
 import type { AuditLogService } from './AuditLogService';
 import { ApiAuditLogService } from './ApiAuditLogService';
 import { MockAuditLogService } from './MockAuditLogService';
+import type { DeviceInventoryService } from './DeviceInventoryService';
+import { ApiDeviceInventoryService } from './ApiDeviceInventoryService';
+import { MockDeviceInventoryService } from './MockDeviceInventoryService';
 
 export type DashboardServices = {
   dashboard: DashboardService;
@@ -33,6 +36,7 @@ export type DashboardServices = {
   slaAdministration: SlaAdministrationService;
   account: AccountService;
   auditLog: AuditLogService;
+  deviceInventory: DeviceInventoryService;
   dataSource: 'MOCK' | 'LIVE';
 };
 
@@ -99,6 +103,11 @@ export function createDashboardServices(options?: {
         options.getAuthorizationHeaders,
         options.handleUnauthenticated
       ),
+      deviceInventory: new ApiDeviceInventoryService(
+        baseUrl,
+        options.getAuthorizationHeaders,
+        options.handleUnauthenticated
+      ),
       dataSource: 'LIVE',
     };
   }
@@ -111,6 +120,7 @@ export function createDashboardServices(options?: {
     slaAdministration: new MockSlaAdministrationService(),
     account: new MockAccountService(),
     auditLog: new MockAuditLogService(),
+    deviceInventory: new MockDeviceInventoryService(),
     dataSource: 'MOCK',
   };
 }

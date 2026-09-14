@@ -10,6 +10,8 @@ import { SystemMonitoring } from '../pages/SystemMonitoring';
 import { UserAdministration } from '../pages/UserAdministration';
 import { SlaAdministration } from '../pages/SlaAdministration';
 import { AuditLog } from '../pages/AuditLog';
+import { DeviceInventoryAdministration } from '../pages/DeviceInventoryAdministration';
+import { DeviceCatalogAdministration } from '../pages/DeviceCatalogAdministration';
 
 export function DashboardRoute({
   page,
@@ -28,6 +30,8 @@ export function DashboardRoute({
         {page === 'administration' && <UserAdministration />}
         {page === 'sla' && <SlaAdministration />}
         {page === 'audit' && <AuditLog />}
+        {page === 'devices' && <DeviceInventoryAdministration />}
+        {page === 'device-catalog' && <DeviceCatalogAdministration />}
       </DashboardShell>
     </DashboardProvider>
   );
