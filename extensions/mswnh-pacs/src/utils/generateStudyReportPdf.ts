@@ -24,7 +24,7 @@ const PAGE_HEIGHT = 297;
 const MARGIN_X = 18;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_X * 2;
 const ACCENT = [25, 118, 163] as const;
-const PALE_ACCENT = [234, 244, 248] as const;
+const CELL_BACKGROUND = [255, 255, 255] as const;
 const TEXT = [31, 41, 55] as const;
 const MUTED = [100, 116, 139] as const;
 
@@ -169,7 +169,7 @@ export async function createStudyReportPdf(
     );
     const height = Math.max(13, 8 + Math.max(...wrappedValues.map(lines => lines.length)) * 3.3);
     ensureSpace(height);
-    pdf.setFillColor(...PALE_ACCENT);
+    pdf.setFillColor(...CELL_BACKGROUND);
     pdf.rect(MARGIN_X, y, CONTENT_WIDTH, height - 1, 'F');
     items.forEach(([label], index) => {
       const x = MARGIN_X + index * columnWidth;
@@ -216,7 +216,7 @@ export async function createStudyReportPdf(
     const columnWidth = CONTENT_WIDTH / 2;
     const height = 19;
     ensureSpace(height);
-    pdf.setFillColor(...PALE_ACCENT);
+    pdf.setFillColor(...CELL_BACKGROUND);
     pdf.rect(MARGIN_X, y, CONTENT_WIDTH, height - 1, 'F');
     pdf.setDrawColor(213, 222, 229);
     pdf.line(MARGIN_X + columnWidth, y + 1, MARGIN_X + columnWidth, y + height - 2);
@@ -291,11 +291,7 @@ export async function createStudyReportPdf(
   addNarrativeSection('FINDINGS', report.findings);
   addNarrativeSection('IMPRESSION / CONCLUSION', report.conclusion);
   if (report.recommendation) {
-    addNarrativeSection(
-      'RECOMMENDATION',
-      report.recommendation,
-      'Complete only when clinically indicated'
-    );
+    addNarrativeSection('RECOMMENDATION', report.recommendation);
   }
 
   addBandTitle('RADIOLOGIST VERIFICATION');
