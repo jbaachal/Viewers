@@ -2,7 +2,12 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@ohif/ui-next';
 
 import { DashboardLoadingSkeleton, DashboardSection } from '../components/dashboard';
-import { SystemComponentCard, SystemDetailsDialog, SystemStatusBadge } from '../components/system';
+import {
+  OfflineDevicesDialog,
+  SystemComponentCard,
+  SystemDetailsDialog,
+  SystemStatusBadge,
+} from '../components/system';
 import { useDashboardContext } from '../context/DashboardProvider';
 import type { HealthState, SystemHealthComponent, SystemHealthSnapshot } from '../models';
 import { formatKampalaDateTime } from '../utils/formatDashboardDate';
@@ -22,12 +27,14 @@ function SummaryCard({
   detail,
   state = 'info',
   action,
+  onClick,
 }: {
   label: string;
   value: string;
   detail: string;
   state?: 'healthy' | 'warning' | 'critical' | 'info';
   action?: React.ReactNode;
+  onClick?: () => void;
 }) {
   const styles = {
     healthy: 'border-emerald-400/30 bg-emerald-400/5',
@@ -35,20 +42,35 @@ function SummaryCard({
     critical: 'border-red-400/30 bg-red-400/5',
     info: 'border-primary/30 bg-primary/5',
   };
-  return (
-    <section className={`${styles[state]} min-h-28 rounded-xl border p-4`}>
+  const content = (
+    <>
       <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">{label}</p>
       <strong className="text-foreground mt-2 block text-2xl tabular-nums">{value}</strong>
       <p className="text-muted-foreground mt-1 text-xs">{detail}</p>
       {action && <div className="mt-3">{action}</div>}
-    </section>
+    </>
   );
+  const className = `${styles[state]} min-h-28 rounded-xl border p-4`;
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        className={`${className} hover:border-primary focus-visible:ring-primary w-full text-left transition focus-visible:outline-none focus-visible:ring-2`}
+        aria-label={`View ${label.toLowerCase()} details`}
+        onClick={onClick}
+      >
+        {content}
+      </button>
+    );
+  }
+  return <section className={className}>{content}</section>;
 }
 
 export function SystemMonitoring() {
   const { services, demoRole } = useDashboardContext();
   const [snapshot, setSnapshot] = useState<SystemHealthSnapshot | null>(null);
   const [selected, setSelected] = useState<SystemHealthComponent | null>(null);
+  const [showOfflineDevices, setShowOfflineDevices] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const allowed = demoRole === 'PACS_ADMIN';
@@ -74,6 +96,10 @@ export function SystemMonitoring() {
 
   const infrastructureComponents = useMemo(
     () => snapshot?.components.filter(component => component.kind !== 'MODALITY') ?? [],
+    [snapshot]
+  );
+  const offlineDevices = useMemo(
+    () => snapshot?.devices.filter(device => device.state === 'OFFLINE') ?? [],
     [snapshot]
   );
 
@@ -246,6 +272,7 @@ export function SystemMonitoring() {
                     ? 'healthy'
                     : 'info'
               }
+              onClick={offlineDevices.length ? () => setShowOfflineDevices(true) : undefined}
               action={
                 snapshot.offlineModalityCount === null ? (
                   <a
@@ -347,6 +374,11 @@ export function SystemMonitoring() {
         component={selected}
         storage={snapshot?.storage}
         onClose={() => setSelected(null)}
+      />
+      <OfflineDevicesDialog
+        open={showOfflineDevices}
+        devices={offlineDevices}
+        onClose={() => setShowOfflineDevices(false)}
       />
     </div>
   );
