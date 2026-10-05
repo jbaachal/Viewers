@@ -6,12 +6,14 @@ export function ManagementMetricCard({
   detail,
   tone = 'info',
   onClick,
+  className = '',
 }: {
   label: string;
   value: string;
   detail: string;
   tone?: 'info' | 'healthy' | 'warning' | 'critical';
   onClick?: () => void;
+  className?: string;
 }) {
   const tones = {
     info: 'border-primary/30 bg-primary/5',
@@ -28,16 +30,16 @@ export function ManagementMetricCard({
       <span className="text-muted-foreground mt-1 block text-xs">{detail}</span>
     </>
   );
-  const className = `${tones[tone]} min-h-28 rounded-xl border p-4 text-left shadow-sm`;
+  const cardClassName = `${tones[tone]} min-h-28 rounded-xl border p-4 text-left shadow-sm ${className}`;
   return onClick ? (
     <button
       type="button"
-      className={`${className} focus-visible:ring-ring transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2`}
+      className={`${cardClassName} focus-visible:ring-ring transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2`}
       onClick={onClick}
     >
       {content}
     </button>
   ) : (
-    <section className={className}>{content}</section>
+    <section className={cardClassName}>{content}</section>
   );
 }

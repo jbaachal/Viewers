@@ -134,7 +134,7 @@ export function ManagementDashboard() {
         <DashboardLoadingSkeleton label="Loading management report" />
       ) : report ? (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-8">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <ManagementMetricCard
               label="Examinations"
               value={report.summary.totalExaminations.toLocaleString()}
@@ -177,6 +177,7 @@ export function ManagementDashboard() {
               value={report.summary.cancelledOrIncomplete.toLocaleString()}
               detail="Cancelled or incomplete"
               tone={report.summary.cancelledOrIncomplete ? 'warning' : 'healthy'}
+              className="sm:col-span-2"
             />
           </div>
 
