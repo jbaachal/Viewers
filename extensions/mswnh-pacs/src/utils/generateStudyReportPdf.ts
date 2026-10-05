@@ -285,7 +285,7 @@ export async function createStudyReportPdf(
   ]);
 
   addNarrativeSection('CLINICAL INFORMATION', context.history);
-  addNarrativeSection('REPORT SUBJECT', report.subject);
+  addNarrativeSection('EXAMINATION', report.subject);
   addNarrativeSection('COMPARISON', report.comparison);
   addNarrativeSection('TECHNIQUE', report.technique);
   addNarrativeSection('FINDINGS', report.findings);

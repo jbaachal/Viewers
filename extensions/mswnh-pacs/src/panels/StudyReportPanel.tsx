@@ -44,44 +44,60 @@ function getRealmRoles(user: any): string[] {
 
 type StudyContext = StudyReportPdfContext;
 
+const semanticColor = (name: string) => `hsl(var(--${name}))`;
+
 const styles: Record<string, React.CSSProperties> = {
-  panel: { padding: 16, height: '100%', overflowY: 'auto', color: '#f3f4f6' },
+  panel: {
+    padding: 16,
+    height: '100%',
+    overflowY: 'auto',
+    color: semanticColor('foreground'),
+    background: semanticColor('background'),
+  },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
   row: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  card: { marginTop: 12, padding: 12, border: '1px solid #374151', borderRadius: 6 },
+  card: {
+    marginTop: 12,
+    padding: 12,
+    border: `1px solid ${semanticColor('border')}`,
+    borderRadius: 6,
+    background: semanticColor('card'),
+    color: semanticColor('card-foreground'),
+  },
   demographics: {
     marginTop: 12,
     padding: 12,
-    border: '1px solid #164e63',
+    border: `1px solid ${semanticColor('border')}`,
     borderRadius: 6,
-    background: '#082f49',
+    background: semanticColor('card'),
+    color: semanticColor('card-foreground'),
   },
   grid: { display: 'grid', gridTemplateColumns: 'minmax(90px, 0.8fr) 1.4fr', gap: '6px 10px' },
-  label: { fontSize: 11, color: '#9ca3af' },
-  value: { fontSize: 12, color: '#f3f4f6', overflowWrap: 'anywhere' },
+  label: { fontSize: 11, color: semanticColor('muted-foreground') },
+  value: { fontSize: 12, color: semanticColor('foreground'), overflowWrap: 'anywhere' },
   field: {
     width: '100%',
     marginTop: 4,
-    border: '1px solid #4b5563',
+    border: `1px solid ${semanticColor('input')}`,
     borderRadius: 4,
     padding: 8,
-    background: '#111827',
-    color: '#fff',
+    background: semanticColor('background'),
+    color: semanticColor('foreground'),
   },
   button: {
-    border: '1px solid #3b82f6',
+    border: `1px solid ${semanticColor('primary')}`,
     borderRadius: 4,
     padding: '6px 10px',
-    background: '#172554',
-    color: '#fff',
+    background: semanticColor('primary'),
+    color: semanticColor('primary-foreground'),
     cursor: 'pointer',
   },
   secondaryButton: {
-    border: '1px solid #4b5563',
+    border: `1px solid ${semanticColor('input')}`,
     borderRadius: 4,
     padding: '6px 10px',
-    background: '#111827',
-    color: '#fff',
+    background: semanticColor('background'),
+    color: semanticColor('foreground'),
     cursor: 'pointer',
   },
   previewOverlay: {
@@ -99,10 +115,11 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     gap: 12,
     padding: '10px 12px',
-    border: '1px solid #374151',
+    border: `1px solid ${semanticColor('border')}`,
     borderBottom: 0,
     borderRadius: '6px 6px 0 0',
-    background: '#0f172a',
+    background: semanticColor('card'),
+    color: semanticColor('card-foreground'),
   },
   previewFrame: {
     width: '100%',
@@ -313,7 +330,7 @@ export default function StudyReportPanel() {
         value => value.trim()
       )
     ) {
-      setError('Subject, comparison, technique, findings, and conclusion are required.');
+      setError('Examination, comparison, technique, findings, and conclusion are required.');
       return;
     }
 
@@ -546,7 +563,11 @@ export default function StudyReportPanel() {
               key={field}
               style={{ display: 'block', marginTop: 10 }}
             >
-              <span style={styles.label}>{field.charAt(0).toUpperCase() + field.slice(1)}</span>
+              <span style={styles.label}>
+                {field === 'subject'
+                  ? 'Examination'
+                  : field.charAt(0).toUpperCase() + field.slice(1)}
+              </span>
               {field === 'subject' ? (
                 <input
                   style={styles.field}

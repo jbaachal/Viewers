@@ -166,12 +166,6 @@ export function ManagementDashboard() {
               tone={(report.summary.reportedWithinSlaPercent ?? 100) >= 90 ? 'healthy' : 'warning'}
             />
             <ManagementMetricCard
-              label="Awaiting verification"
-              value={report.summary.awaitingVerification.toLocaleString()}
-              detail="Reported, not verified"
-              onClick={() => openWorklist({ status: 'reported' })}
-            />
-            <ManagementMetricCard
               label="Overdue"
               value={report.summary.overdue.toLocaleString()}
               detail="Active SLA breaches"

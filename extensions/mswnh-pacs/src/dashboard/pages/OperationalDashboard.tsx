@@ -168,13 +168,15 @@ export function OperationalDashboard() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4 2xl:grid-cols-8">
-        {snapshot.metrics.map(metric => (
-          <DashboardMetricCard
-            key={metric.id}
-            metric={metric}
-            onSelect={selectedMetric => navigate(metricDestination(selectedMetric))}
-          />
-        ))}
+        {snapshot.metrics
+          .filter(metric => metric.id !== 'pendingVerification')
+          .map(metric => (
+            <DashboardMetricCard
+              key={metric.id}
+              metric={metric}
+              onSelect={selectedMetric => navigate(metricDestination(selectedMetric))}
+            />
+          ))}
       </div>
 
       <WorkflowOverview
